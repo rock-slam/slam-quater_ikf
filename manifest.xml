@@ -1,0 +1,22 @@
+<package>
+  <description brief="Orientation estimation using a quaternion-based indirect Kalman filter with adaptive estimation of external acceleration">
+  This filter is concerned with orientation estimation using inertial and magnetic sensors. A quaternion indirect Kalman filter structure is used.Magnetic sensor output is used only for yaw angle estimation.
+  </description>
+  <author>Javier Hidalgo Carrio/javier.hidalgo_carrio@dfki.de</author>
+  <license></license>
+  <url>http://</url>
+  <logo>http://</logo>
+ <!--
+   To add any dependencies use the depend tag
+  <depend package="dummy-dependency-0" />
+	...
+  <depend package="dummy-dependency-n-1" />
+  <depend package="dummy-dependency-n" />
+-->
+<depend package="eigen2" />
+<!--DEPEND-ENTRY-->
+  <versioncontrol type="git" url="" />
+  <export>
+    <cpp cflags="" lflags="" />
+  </export>
+</package>
