@@ -13,7 +13,7 @@
   <depend package="dummy-dependency-n-1" />
   <depend package="dummy-dependency-n" />
 -->
-<depend package="eigen2" />
+<depend package="eigen3" />
 <!--DEPEND-ENTRY-->
   <versioncontrol type="git" url="" />
   <export>
