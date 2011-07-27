@@ -20,8 +20,8 @@
 
 #include <iostream> /**< IO C++ Standard library */
 #include <algorithm> /**< Algorithm C++ Standard library */
-#include <eigen2/Eigen/LU> /**< Lineal algebra of Eigen */
-#include <eigen2/Eigen/SVD> /**< Singular Value Decomposition (SVD) of Eigen */
+#include <Eigen/LU> /**< Lineal algebra of Eigen */
+#include <Eigen/SVD> /**< Singular Value Decomposition (SVD) of Eigen */
 #include "ikf.h" /**< Indirect Kalman Filter */
 
 namespace filter
@@ -371,7 +371,7 @@ namespace filter
       /**
        * Single Value Decomposition
        */
-      SVD<MatrixMeasurement> svdOfR(R);
+      JacobiSVD<MatrixMeasurement> svdOfR(R);
       s = svdOfR.singularValues();
       u = svdOfR.matrixU();
       

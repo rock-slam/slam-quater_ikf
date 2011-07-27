@@ -1,7 +1,7 @@
 /**\file ikf.h
  * Header function file and defines
  */
-#include <eigen2/Eigen/Geometry> /**< Eigen data type for Matrix, Quaternion, etc... */
+#include <Eigen/Geometry> /**< Eigen data type for Matrix, Quaternion, etc... */
 
 
 namespace filter
