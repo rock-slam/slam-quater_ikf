@@ -371,7 +371,8 @@ namespace filter
       /**
        * Single Value Decomposition
        */
-      JacobiSVD<MatrixMeasurement> svdOfR(R);
+      JacobiSVD <MatrixXd > svdOfR(R, ComputeThinU);
+
       s = svdOfR.singularValues();
       u = svdOfR.matrixU();
       

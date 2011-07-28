@@ -61,8 +61,8 @@ namespace filter
   #define EARTHW  7.292115e-05 /**< Earth angular velocity in rad/s **/
   #endif
   
-  
-  typedef Eigen::Matrix<double,NUMAXIS, NUMAXIS> MatrixMeasurement; /**< Measurement matrix type definition (necessary for SVD decomposition) */
+  /** Commented due to Eigen3 update (with Eigen3 JacobiSVD new class this is not needed ) **/
+  // typedef Eigen::Matrix<double,NUMAXIS, NUMAXIS> MatrixMeasurement; /**< Measurement matrix type definition (necessary for SVD decomposition) */
   
   
   class ikf
