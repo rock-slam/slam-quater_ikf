@@ -187,10 +187,14 @@ namespace filter
     {
       Eigen::Matrix <double, NUMAXIS, 1> euler;
       
-      Quaternion2Euler(&q4, &euler);
+      //std::cout << Eigen::Matrix3d(q4) << std::endl; 
+      Vector3d e = Eigen::Matrix3d(q4).eulerAngles(2,1,0);;
+       euler(0) = e[2]; 
+       euler(1) = e[1]; 
+       euler(2) = e[0]; 
       //std::cout << "Attitude (getEuler): "<< euler(0)<<" "<<euler(1)<<" "<<euler(2)<<"\n";
-      std::cout << "Attitude in degrees (getEuler): "<< euler(0)*R2D<<" "<<euler(1)*R2D<<" "<<euler(2)*R2D<<"\n";
-
+     // std::cout << "Attitude in degrees (getEuler): "<< euler(0)*R2D<<" "<<euler(1)*R2D<<" "<<euler(2)*R2D<<"\n";
+      
       return euler;
     }
     
