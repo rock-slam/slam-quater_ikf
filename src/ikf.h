@@ -23,7 +23,7 @@ namespace filter
   #ifndef PI
   #define PI 3.141592653589793238462643383279502884197169399375105820974944592307816406286 /**< Pi Number */
   #endif
-  #define M1 2 /**< Parameter for adaptive algorithm */
+  #define M1 48 /**< Parameter for adaptive algorithm */
   #define M2 3 /**< Parameter for adaptive algorithm */
   #define GAMMA 0.1 /**< Parameter for adaptive algorithm */
   #define R2COUNT 100 /**< Parameter for adaptive algorithm */
@@ -71,7 +71,8 @@ namespace filter
      * Filter members
      */
     private:
-      double r2count; /**< Variable used in the adaptive algorithm */
+      int r1count; /**< Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
+      double r2count; /**< Variable used in the adaptive algorithm, to compute the final Qstart cov. matrix*/
       Eigen::Matrix <double,STATEVECTORSIZE,1> x; /**< State vector */
       Eigen::Matrix <double,NUMAXIS,1> gtilde; /**< gravitation acceleration */
       Eigen::Matrix <double,NUMAXIS,1> mtilde; /**< Magnetic dip angle */
@@ -81,6 +82,7 @@ namespace filter
       Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> A; /**< System matrix */
       Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> Q; /**< Process noise convariance matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> R; /**< Measurement noise convariance matrix */
+      Eigen::Matrix <double,NUMAXIS,NUMAXIS*M1> RHist; /**< History of M1 measurement noise convariance matrix (for the adaptive algorithm) */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Ra; /**< Measurement noise convariance matrix for acc */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rg; /**< Measurement noise convariance matrix for gyros */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rm; /**< Measurement noise convariance matrix for mag */
