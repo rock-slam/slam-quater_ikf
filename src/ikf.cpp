@@ -191,12 +191,12 @@ namespace filter
       Eigen::Matrix <double, NUMAXIS, 1> euler;
       
       //std::cout << Eigen::Matrix3d(q4) << std::endl; 
-      Vector3d e = Eigen::Matrix3d(q4).eulerAngles(2,1,0);;
+      Vector3d e = Eigen::Matrix3d(q4).eulerAngles(2,1,0);
        euler(0) = e[2]; 
        euler(1) = e[1]; 
        euler(2) = e[0]; 
 //       std::cout << "Attitude (getEuler): "<< euler(0)<<" "<<euler(1)<<" "<<euler(2)<<"\n";
-//       std::cout << "Attitude in degrees (getEuler): "<< euler(0)*R2D<<" "<<euler(1)*R2D<<" "<<euler(2)*R2D<<"\n";
+       std::cout << "Attitude in degrees (getEuler): "<< euler(0)*R2D<<" "<<euler(1)*R2D<<" "<<euler(2)*R2D<<"\n";
       
       return euler;
     }
@@ -595,7 +595,11 @@ namespace filter
     {
       Eigen::Matrix <double, NUMAXIS, 1> euler;
       
-      Quaternion2Euler(quat, &euler);
+      //Quaternion2Euler(quat, &euler);
+      
+      euler[2] = quat->toRotationMatrix().eulerAngles(2,1,0)[0];//YAW
+      euler[1] = quat->toRotationMatrix().eulerAngles(2,1,0)[1];//PITCH
+      euler[0] = quat->toRotationMatrix().eulerAngles(2,1,0)[2];//ROLL
       
       if (mode == EAST)
       {
@@ -613,7 +617,10 @@ namespace filter
 	return ERROR;
       }
 	
-      Euler2Quaternion (&euler, quat);
+      //Euler2Quaternion (&euler, quat);
+      *quat = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX())*
+ 			    Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
+ 			    Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ()));
       
       return OK;
     }
