@@ -94,35 +94,206 @@ namespace filter
     protected:
     
     public:
+      
+      /**
+      * @brief Gets the current state vector of the filter
+      * 
+      * @author Javier Hidalgo Carrio.
+      *
+      * @return State Vector
+      *
+      */
       Eigen::Matrix <double,STATEVECTORSIZE,1> getState();
       
+      
+       /**
+      * @brief Gets the current orientation in Quaternion
+      * 
+      * @author Javier Hidalgo Carrio.
+      *
+      * @return Quaternion with the current orientation.
+      *
+      */
       Eigen::Quaternion <double> getAttitude();
       
+      /**
+      * @brief Gets the current orientation in Euler angles
+      * 
+      * @author Javier Hidalgo Carrio.
+      *
+      * @return Current orientation in Euler angles.
+      *
+      */
       Eigen::Matrix <double, NUMAXIS, 1> getEuler();
       
+      /**
+      * @brief Gets Noise covariance matrix
+      * 
+      * @author Javier Hidalgo Carrio.
+      *
+      * @return Matrix P of the covariance of the state vector
+      *
+      */
       Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> getCovariance();
       
+      /**
+      * @brief This function Initilize Attitude
+      * 
+      * Initial orientation value beforeestart the IKF 
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] *initq pointer to quaternion with the initial orientation
+      *
+      * @return OK is everything all right. ERROR on other cases.
+      *
+      */
       int setAttitude (Eigen::Quaternion <double> *initq);
       
+      /**
+      * @brief This function set the initial Omega matrix
+      * 
+      * Initial Omega matrix with angular velocity for 
+      * quaternion integration.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] *u pointer to vector with the angular velocity
+      *
+      * @return OK is everything all right. ERROR on other cases.
+      *
+      */
       int setOmega (Eigen::Matrix <double,NUMAXIS,1>  *u);
       
+      /**
+      * @brief This function Initilize the vectors and matrix of the IKF
+      * 
+      * This method receives the measurement noise matrix of the sensors
+      * The theoretical gravity value and the Dip angle of the location.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] Ra measurement noise matrix of Accelerometers.
+      * @param[in] Rg measurement noise matrix of Gyroscopes.
+      * @param[in] Rm measurement noise matrix of Magnetometers.
+      * @param[in] g local gravitational value.
+      * @param[in] alpha Dip angle
+      *
+      * @return void
+      *
+      */
       void Init (Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm, double g, double alpha);
       
+      /**
+      * @brief Performs the prediction step of the filter.
+      * 
+      * It computes the discrete version of the matrix A to propagate forward
+      * the state vector x. It computes the Q and P matrix as well as the 
+      * quaternion integration from the input vector u and the delta time.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] *u pointer to vector with the angular velocity
+      * @param[in] dt delta time between samples
+      *
+      * @return void
+      *
+      */
       void predict(Eigen::Matrix <double,NUMAXIS,1>  *u, double dt);
       
+      /**
+      * @brief Performs the measurement and correction steps of the filter.
+      * 
+      * The IKf is based on two measurement step:\
+      *  1. Measurement step to correct Pitch and Roll from accelerometers.
+      *  2. Measurement step to correct Yaw angle from magnetometers.
+      * 
+      * The first measurement step is dynamics. The noise covariamce matrix
+      * of the update is dynamic depending on external accelerations felt on
+      * the accelerometers. That means the variance noise increase or decrease
+      * depending on the external acceleration. Thas is the main different between 
+      * normal EKF.
+      * 
+      * The second measurement step only affects the Yaw (heading) angle.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] *u pointer to vector with the angular velocity
+      * @param[in] dt delta time between samples
+      *
+      * @return void
+      *
+      */
       void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag);
       
+      /**
+      * @brief This computes the theoretical gravity value according to the WGS-84 ellipsoid earth model.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] latitude double the latitude value in radian
+      * @param[in] altitude double with the altitude value in meters
+      *
+      * @return double. the theoretical value of the local gravity
+      *
+      */
       double GravityModel (double latitude, double altitude);
       
+      /**
+      * @brief Substract the Earth rotation from the gyroscopes readout
+      *
+      * This function computes the substraction of the rotation of the Earth (EARTHW)
+      * from the gyroscope values. This function uses quaternion of transformation from
+      * the body to the geographic frame and the latitude in radians.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in, out] *u pointer to angular velocity
+      * @param[in] *qb_g quaternion from body frame to geographic frame
+      * @param[in] latitude location latitude angle in radians
+      *
+      * @return void
+      *
+      */
       void SubstractEarthRotation(Eigen::Matrix <double, NUMAXIS, 1> *u, Eigen::Quaternion <double> *qb_g, double latitude);
       
+      /**
+      * @brief Correct the magnetic declination of the North
+      *
+      * Magnetic North and geographic North (Ertah rotation axis)
+      * are different depending on geograohic location according
+      * to a Declination Map. The function correct this bias.
+      * See: http://www.magnetic-declination.com for futher information
+      * about the declination angle of your location.
+      *
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in, out] *quat pointer to quaternion with the orientation 
+      * @param[in] double magnetic declination angle in radians
+      * @param[in] mode. EAST or WEST depending on the magnetic declination
+      *
+      * @return OK is everything all right. ERROR on other cases.
+      *
+      */
       int CorrectMagneticDeclination (Eigen::Quaternion <double> *quat, double magnetic_declination,  int mode);
       
+      /**
+      * @brief Conversion Quaternion to DCM (Direct Cosine Matrix)
+      * 
+      * Conversion to a transformation matrix from a quaternion
+      * The quaternion is represented in Eigen convention:
+      * w+xi+yj+zk, first element the scalar and the three rest the vectorial part.
+      * 
+      * @author Javier Hidalgo Carrio.
+      *
+      * @param[in] *q pointer to a quaternion vector.
+      * @param[out] *C pointer to a matrix. The three by three matrix
+      *
+      * @return void
+      *
+      */
       void Quaternion2DCM(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS, NUMAXIS  >*C);
-      
-      void Quaternion2Euler(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS , 1  >* euler);
-      
-      void Euler2Quaternion(Eigen::Matrix< double, NUMAXIS , 1  >* euler, Eigen::Quaternion< double >* q);
+
   };
 
 } // end namespace filter

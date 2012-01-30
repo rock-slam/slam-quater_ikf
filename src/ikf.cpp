@@ -34,21 +34,7 @@ namespace filter
     /** Indirect Kalman Filter methods **/
  
     /**
-    * @brief This function Initilize the vectors and matrix of the IKF
-    * 
-    * This method receives the measurement noise matrix of the sensors
-    * The theoretical gravity value and the Dip angle of the location.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] Ra measurement noise matrix of Accelerometers.
-    * @param[in] Rg measurement noise matrix of Gyroscopes.
-    * @param[in] Rm measurement noise matrix of Magnetometers.
-    * @param[in] g local gravitational value.
-    * @param[in] alpha Dip angle
-    *
-    * @return void
-    *
+    * @brief This function Initilize the vectors and matrix of the IKF   
     */
     
     void ikf::Init(Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm, double g, double alpha)
@@ -67,7 +53,7 @@ namespace filter
       x = Matrix <double,STATEVECTORSIZE,1>::Zero();
       
       Q = Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE>::Zero();            
-      Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.1 * (*Rg);
+      Q.block <NUMAXIS, NUMAXIS> (0,0) = 1.0 * (*Rg);
 //       Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.0000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
 //       Q.block <NUMAXIS, NUMAXIS> (6,6) = 0.0000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
@@ -127,15 +113,6 @@ namespace filter
     
     /**
     * @brief This function Initilize Attitude
-    * 
-    * Initial orientation value beforeestart the IKF 
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *initq pointer to quaternion with the initial orientation
-    *
-    * @return OK is everything all right. ERROR on other cases.
-    *
     */
     int ikf::setAttitude(Eigen::Quaternion< double > *initq)
     {
@@ -152,16 +129,6 @@ namespace filter
     
     /**
     * @brief This function set the initial Omega matrix
-    * 
-    * Initial Omega matrix with angular velocity for 
-    * quaternion integration.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *u pointer to vector with the angular velocity
-    *
-    * @return OK is everything all right. ERROR on other cases.
-    *
     */
     int ikf::setOmega(Eigen::Matrix< double, NUMAXIS , 1  >* u)
     {
@@ -180,11 +147,6 @@ namespace filter
 
     /**
     * @brief Gets the current orientation in Euler angles
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @return Current orientation in Euler angles.
-    *
     */
     Eigen::Matrix< double, NUMAXIS , 1  > ikf::getEuler()
     {
@@ -203,11 +165,6 @@ namespace filter
     
     /**
     * @brief Gets the current orientation in Quaternion
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @return Quaternion with the current orientation.
-    *
     */
     Eigen::Quaternion< double > ikf::getAttitude()
     {
@@ -216,11 +173,6 @@ namespace filter
 
     /**
     * @brief Gets the current state vector of the filter
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @return State Vector
-    *
     */
     Eigen::Matrix< double, STATEVECTORSIZE , 1  > ikf::getState()
     {
@@ -230,11 +182,6 @@ namespace filter
     
     /**
     * @brief Gets Noise covariance matrix
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @return Matrix P of the covariance of the state vector
-    *
     */
     Eigen::Matrix< double, STATEVECTORSIZE , STATEVECTORSIZE> ikf::getCovariance()
     {
@@ -244,18 +191,6 @@ namespace filter
     
     /**
     * @brief Performs the prediction step of the filter.
-    * 
-    * It computes the discrete version of the matrix A to propagate forward
-    * the state vector x. It computes the Q and P matrix as well as the 
-    * quaternion integration from the input vector u and the delta time.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *u pointer to vector with the angular velocity
-    * @param[in] dt delta time between samples
-    *
-    * @return void
-    *
     */
     void ikf::predict(Eigen::Matrix< double, NUMAXIS , 1  >* u, double dt)
     {
@@ -313,26 +248,6 @@ namespace filter
     
      /**
     * @brief Performs the measurement and correction steps of the filter.
-    * 
-    * The IKf is based on two measurement step:\
-    *  1. Measurement step to correct Pitch and Roll from accelerometers.
-    *  2. Measurement step to correct Yaw angle from magnetometers.
-    * 
-    * The first measurement step is dynamics. The noise covariamce matrix
-    * of the update is dynamic depending on external accelerations felt on
-    * the accelerometers. That means the variance noise increase or decrease
-    * depending on the external acceleration. Thas is the main different between 
-    * normal EKF.
-    * 
-    * The second measurement step only affects the Yaw (heading) angle.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *u pointer to vector with the angular velocity
-    * @param[in] dt delta time between samples
-    *
-    * @return void
-    *
     */
     void ikf::update(Eigen::Matrix< double, NUMAXIS , 1  >* acc, Eigen::Matrix< double, NUMAXIS , 1  >* mag)
     {
@@ -391,7 +306,7 @@ namespace filter
 	Uk = Uk + RHist.block <NUMAXIS, NUMAXIS> (0,NUMAXIS*j);
       }
       
-//         Uk = Uk / (M1);
+        Uk = Uk / (M1);
       
 //       std::cout<< "Uk matrix(after):\n"<<Uk<<"\n";
       
@@ -462,6 +377,7 @@ namespace filter
       /** Create the orientation matrix from the quaternion **/
       Quaternion2DCM (&q4, &Cq);
       
+      
       /** Second measurement step **/
       mtilde_body = Cq * mtilde;
       vec2product << 0, -mtilde_body(2), mtilde_body(1),
@@ -519,14 +435,6 @@ namespace filter
 
     /**
     * @brief This computes the theoretical gravity value according to the WGS-84 ellipsoid earth model.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] latitude double the latitude value in radian
-    * @param[in] altitude double with the altitude value in meters
-    *
-    * @return double. the theoretical value of the local gravity
-    *
     */
     double ikf::GravityModel(double latitude, double altitude)
     {
@@ -546,19 +454,6 @@ namespace filter
     
     /**
     * @brief Substract the Earth rotation from the gyroscopes readout
-    *
-    * This function computes the substraction of the rotation of the Earth (EARTHW)
-    * from the gyroscope values. This function uses quaternion of transformation from
-    * the body to the geographic frame and the latitude in radians.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in, out] *u pointer to angular velocity
-    * @param[in] *qb_g quaternion from body frame to geographic frame
-    * @param[in] latitude location latitude angle in radians
-    *
-    * @return void
-    *
     */
     void ikf::SubstractEarthRotation(Eigen::Matrix <double, NUMAXIS, 1> *u, Eigen::Quaternion <double> *qb_g, double latitude)
     {
@@ -574,29 +469,12 @@ namespace filter
     }
     
     /**
-    * @brief Correct the magnetic declination of the North
-    *
-    * Magnetic North and geographic North (Ertah rotation axis)
-    * are different depending on geograohic location according
-    * to a Declination Map. The function correct this bias.
-    * See: http://www.magnetic-declination.com for futher information
-    * about the declination angle of your location.
-    *
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in, out] *quat pointer to quaternion with the orientation 
-    * @param[in] double magnetic declination angle in radians
-    * @param[in] mode. EAST or WEST depending on the magnetic declination
-    *
-    * @return OK is everything all right. ERROR on other cases.
-    *
+    * @brief Correct the magnetic declination of the North 
     */
     int ikf::CorrectMagneticDeclination(Eigen::Quaternion< double >* quat, double magnetic_declination, int mode)
     {
       Eigen::Matrix <double, NUMAXIS, 1> euler;
-      
-      //Quaternion2Euler(quat, &euler);
-      
+           
       euler[2] = quat->toRotationMatrix().eulerAngles(2,1,0)[0];//YAW
       euler[1] = quat->toRotationMatrix().eulerAngles(2,1,0)[1];//PITCH
       euler[0] = quat->toRotationMatrix().eulerAngles(2,1,0)[2];//ROLL
@@ -617,7 +495,6 @@ namespace filter
 	return ERROR;
       }
 	
-      //Euler2Quaternion (&euler, quat);
       *quat = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX())*
  			    Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
  			    Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ()));
@@ -627,18 +504,6 @@ namespace filter
     
     /**
     * @brief Conversion Quaternion to DCM (Direct Cosine Matrix)
-    * 
-    * Conversion to a transformation matrix from a quaternion
-    * The quaternion is represented in Eigen convention:
-    * w+xi+yj+zk, first element the scalar and the three rest the vectorial part.
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *q pointer to a quaternion vector.
-    * @param[out] *C pointer to a matrix. The three by three matrix
-    *
-    * @return void
-    *
     */
     void ikf::Quaternion2DCM(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS, NUMAXIS  >*C)
     {
@@ -666,68 +531,5 @@ namespace filter
       
       return;
     }
-    
-    
-    /**
-    * @brief Conversion Quaternion to Euler angles
-    * 
-    * Considering Heading along z axis, pitch allow y axis and roll along x axis.
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[in] *q pointer to a quaternion vector.
-    * @param[out] *euler pointer to double. The three euler angles Convention Roll, Pitch, Yaw
-    *
-    * @return void
-    *
-    */
-    void ikf::Quaternion2Euler(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS , 1  >* euler)
-    {
-      double sqx, sqy, sqz, sqw;
-
-      /** Square terms **/
-      sqx = pow (q->x(), 2);
-      sqy = pow (q->y(), 2);
-      sqz = pow (q->z(), 2);
-      sqw = pow (q->w(), 2);
-
-      (*euler)(0) = atan2 (2.0 * (q->y()*q->z() + q->x()*q->w()), (-sqx-sqy+sqz+sqw)); /** Roll **/
-      (*euler)(1) = asin (-2.0 * (q->x()*q->z() - q->y()*q->w())/(sqx+sqy+sqz+sqw)); /** Pitch **/
-      (*euler)(2) = atan2 (2.0 * (q->x()*q->y() + q->z()*q->w()), (sqx - sqy -sqz + sqw)); /** Yaw **/
-
-      return;
-    }
-    
-    /**
-    * @brief Conversion Euler angles to Quaternion
-    * 
-    * Considering Heading along z axis, pitch allow y axis and roll along x axis.
-    * 
-    * @author Javier Hidalgo Carrio.
-    *
-    * @param[out] *euler pointer to double. The three euler angles, the convention is Roll, Pitch, Yaw
-    * @param[in] *q pointer to a quaternion vector.
-    *
-    * @return void
-    *
-    */
-    void ikf::Euler2Quaternion(Eigen::Matrix< double, NUMAXIS , 1  >* euler, Eigen::Quaternion< double >* q)
-    {
-      
-      double c1 = cos((*euler)(2)/2);
-      double s1 = sin((*euler)(2)/2);
-      double c2 = cos((*euler)(1)/2);
-      double s2 = sin((*euler)(1)/2);
-      double c3 = cos((*euler)(0)/2);
-      double s3 = sin((*euler)(0)/2);
-
-      q->w() = (double) (c1*c2*c3 + s1*s2*s3);
-      q->x() = (double) (c1*c2*s3 - s1*s2*c3);
-      q->y() = (double) (c1*s2*c3 + s1*c2*s3);
-      q->z() = (double) (s1*c2*c3 - c1*s2*s3);
-      
-      return;
-    }
-    
 
 }
