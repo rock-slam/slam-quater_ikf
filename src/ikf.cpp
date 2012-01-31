@@ -53,9 +53,7 @@ namespace filter
       x = Matrix <double,STATEVECTORSIZE,1>::Zero();
       
       Q = Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE>::Zero();            
-      Q.block <NUMAXIS, NUMAXIS> (0,0) = 1.0 * (*Rg);
-//       Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.0000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
-//       Q.block <NUMAXIS, NUMAXIS> (6,6) = 0.0000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
+      Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (*Rg);
       Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       Q.block <NUMAXIS, NUMAXIS> (6,6) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       
