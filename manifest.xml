@@ -19,4 +19,6 @@
   <export>
     <cpp cflags="" lflags="" />
   </export>
+  
+  <tags>stable, localization</tags>
 </package>
