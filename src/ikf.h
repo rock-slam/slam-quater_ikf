@@ -282,7 +282,7 @@ namespace filter
       * 
       * Conversion to a transformation matrix from a quaternion
       * The quaternion is represented in Eigen convention:
-      * w+xi+yj+zk, first element the scalar and otjer three are the vectorial part.
+      * w+xi+yj+zk, first element the scalar and others three are the vectorial part.
       * 
       * @author Javier Hidalgo Carrio.
       *
