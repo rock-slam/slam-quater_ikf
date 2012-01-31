@@ -295,7 +295,6 @@ namespace filter
       /** r1count + 1 modulus the number of history M1 **/
       r1count++; 
 
-//       std::cout<< "Uk matrix(before):\n"<<Uk<<"\n";
       
       /** Starting the Uk is R **/
       Uk = R;
@@ -306,7 +305,6 @@ namespace filter
       
         Uk = Uk / (M1);
       
-//       std::cout<< "Uk matrix(after):\n"<<Uk<<"\n";
       
       fooR2 = H1*P*H1.transpose() + Ra;
       
