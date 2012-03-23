@@ -27,8 +27,6 @@ namespace filter
   #define M2 3 /**< Parameter for adaptive algorithm */
   #define GAMMA 0.1 /**< Parameter for adaptive algorithm */
   #define R2COUNT 100 /**< Parameter for adaptive algorithm */
-  #define EAST 1 /**< EAST is 1 and means positive magnetic declination **/
-  #define WEST 2 /**< WEST is 2 and means negative magnetic declination **/
   
   #define D2R PI/180.00 /**< Convert degree to radian **/
   #define R2D 180.00/PI /**< Convert radian to degree **/
@@ -226,59 +224,9 @@ namespace filter
       */
       void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag);
       
-      /**
-      * @brief This computes the theoretical gravity value according to the WGS-84 ellipsoid earth model.
-      *
-      * @author Javier Hidalgo Carrio.
-      *
-      * @param[in] latitude double the latitude value in radian
-      * @param[in] altitude double with the altitude value in meters
-      *
-      * @return double. the theoretical value of the local gravity
-      *
-      */
-      double GravityModel (double latitude, double altitude);
       
       /**
-      * @brief Substract the Earth rotation from the gyroscopes readout
-      *
-      * This function computes the substraction of the rotation of the Earth (EARTHW)
-      * from the gyroscope values. This function uses quaternion of transformation from
-      * the body to the geographic frame and the latitude in radians.
-      *
-      * @author Javier Hidalgo Carrio.
-      *
-      * @param[in, out] *u pointer to angular velocity
-      * @param[in] *qb_g quaternion from body frame to geographic frame
-      * @param[in] latitude location latitude angle in radians
-      *
-      * @return void
-      *
-      */
-      void SubstractEarthRotation(Eigen::Matrix <double, NUMAXIS, 1> *u, Eigen::Quaternion <double> *qb_g, double latitude);
-      
-      /**
-      * @brief Correct the magnetic declination of the North
-      *
-      * Magnetic North and geographic North (Ertah rotation axis)
-      * are different depending on geograohic location according
-      * to a Declination Map. The function correct this bias.
-      * See: http://www.magnetic-declination.com for futher information
-      * about the declination angle of your location.
-      *
-      * @author Javier Hidalgo Carrio.
-      *
-      * @param[in, out] *quat pointer to quaternion with the orientation 
-      * @param[in] double magnetic declination angle in radians
-      * @param[in] mode. EAST or WEST depending on the magnetic declination
-      *
-      * @return OK is everything all right. ERROR on other cases.
-      *
-      */
-      int CorrectMagneticDeclination (Eigen::Quaternion <double> *quat, double magnetic_declination,  int mode);
-      
-      /**
-      * @brief Conversion Quaternion to DCM (Direct Cosine Matrix)
+      * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
       * 
       * Conversion to a transformation matrix from a quaternion
       * The quaternion is represented in Eigen convention:

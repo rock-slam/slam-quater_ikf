@@ -429,77 +429,9 @@ namespace filter
       return;
     }
 
+       
     /**
-    * @brief This computes the theoretical gravity value according to the WGS-84 ellipsoid earth model.
-    */
-    double ikf::GravityModel(double latitude, double altitude)
-    {
-      double g; /**< g magnitude at zero altitude **/
-
-      /** Nominal Gravity model **/
-      g = GWGS0*((1+GWGS1*pow(sin(latitude),2))/sqrt(1-pow(ECC,2)*pow(sin(latitude),2)));
-
-      /** Gravity affects by the altitude (aprox the value r = Re **/
-      g = g*pow(Re/(Re+altitude), 2);
-
-      std::cout<<"Theoretical gravity for this location (WGS-84 ellipsoid model): "<< g<<" [m/s^2]\n";
-
-      return g;
-
-    }
-    
-    /**
-    * @brief Substract the Earth rotation from the gyroscopes readout
-    */
-    void ikf::SubstractEarthRotation(Eigen::Matrix <double, NUMAXIS, 1> *u, Eigen::Quaternion <double> *qb_g, double latitude)
-    {
-      Eigen::Matrix <double, NUMAXIS, 1> v (EARTHW*cos(latitude), 0, EARTHW*sin(latitude)); /**< vector of earth rotation components expressed in the geografic frame according to the latitude **/
-
-      /** Compute the v vector expressed in the body frame **/
-      v = (*qb_g) * v;
-
-      /** Subtract the earth rotation to the vector of inputs (u = u-v**/
-      (*u)  = (*u) - v;
-      
-      return;
-    }
-    
-    /**
-    * @brief Correct the magnetic declination of the North 
-    */
-    int ikf::CorrectMagneticDeclination(Eigen::Quaternion< double >* quat, double magnetic_declination, int mode)
-    {
-      Eigen::Matrix <double, NUMAXIS, 1> euler;
-           
-      euler[2] = quat->toRotationMatrix().eulerAngles(2,1,0)[0];//YAW
-      euler[1] = quat->toRotationMatrix().eulerAngles(2,1,0)[1];//PITCH
-      euler[0] = quat->toRotationMatrix().eulerAngles(2,1,0)[2];//ROLL
-      
-      if (mode == EAST)
-      {
-	std::cout << "[EAST] magnetic declination\n";
-	euler[2] -= magnetic_declination; /** Magnetic declination is positive **/
-      }
-      else if (mode == WEST)
-      {
-	std::cout << "[WEST] magnetic declination\n";
-	euler[2] += magnetic_declination; /** Magnetic declination is negative **/
-      }
-      else
-      {
-	std::cerr << "[ERROR] In the correction of the magnetic declination\n";
-	return ERROR;
-      }
-	
-      *quat = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX())*
- 			    Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
- 			    Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ()));
-      
-      return OK;
-    }
-    
-    /**
-    * @brief Conversion Quaternion to DCM (Direct Cosine Matrix)
+    * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
     */
     void ikf::Quaternion2DCM(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS, NUMAXIS  >*C)
     {
