@@ -17,8 +17,12 @@ namespace filter
   #endif
 
   /** IKF constant parameters **/
-  #define STATEVECTORSIZE 9 /**< Number of variables of the vector state-space representation **/
+  #ifndef IKFSTATEVECTORSIZE
+  #define IKFSTATEVECTORSIZE 9 /**< Number of variables of the vector state-space representation **/
+  #endif
+  #ifndef QUATERSIZE
   #define QUATERSIZE 4 /**< Number of parameters of a quaternion **/
+  #endif
 
   #ifndef PI
   #define PI 3.141592653589793238462643383279502884197169399375105820974944592307816406286 /**< Pi Number */
@@ -71,21 +75,21 @@ namespace filter
     private:
       int r1count; /**< Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
       double r2count; /**< Variable used in the adaptive algorithm, to compute the final Qstart cov. matrix*/
-      Eigen::Matrix <double,STATEVECTORSIZE,1> x; /**< State vector */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> x; /**< State vector */
       Eigen::Matrix <double,NUMAXIS,1> gtilde; /**< gravitation acceleration */
       Eigen::Matrix <double,NUMAXIS,1> mtilde; /**< Magnetic dip angle */
       Eigen::Quaternion <double> q4;  /**< Attitude quaternion */
       Eigen::Matrix <double,QUATERSIZE,QUATERSIZE> oldomega4; /**< Quaternion integration matrix */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> P; /**< Error convariance matrix */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> A; /**< System matrix */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> Q; /**< Process noise convariance matrix */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> P; /**< Error convariance matrix */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> A; /**< System matrix */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Q; /**< Process noise convariance matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> R; /**< Measurement noise convariance matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS*M1> RHist; /**< History of M1 measurement noise convariance matrix (for the adaptive algorithm) */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Ra; /**< Measurement noise convariance matrix for acc */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rg; /**< Measurement noise convariance matrix for gyros */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rm; /**< Measurement noise convariance matrix for mag */
-      Eigen::Matrix <double,NUMAXIS,STATEVECTORSIZE> H1; /**< Measurement 1 Observation matrix */
-      Eigen::Matrix <double,NUMAXIS,STATEVECTORSIZE> H2; /**< Measurement 2 Observation matrix */
+      Eigen::Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE> H1; /**< Measurement 1 Observation matrix */
+      Eigen::Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE> H2; /**< Measurement 2 Observation matrix */
       Eigen::Matrix <double,NUMAXIS,1> bghat; /**< Estimated bias for gyroscope */
       Eigen::Matrix <double,NUMAXIS,1> bahat; /**< Estimated bias for accelerometer */
 
@@ -101,7 +105,7 @@ namespace filter
       * @return State Vector
       *
       */
-      Eigen::Matrix <double,STATEVECTORSIZE,1> getState();
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> getState();
       
       
        /**
@@ -132,7 +136,7 @@ namespace filter
       * @return Matrix P of the covariance of the state vector
       *
       */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> getCovariance();
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> getCovariance();
       
       /**
       * @brief This function Initilize Attitude
@@ -216,13 +220,13 @@ namespace filter
       *
       * @author Javier Hidalgo Carrio.
       *
-      * @param[in] *u pointer to vector with the angular velocity
-      * @param[in] dt delta time between samples
-      *
+      * @param[in] *acc pointer to vector with accelerations
+      * @param[in] *magn pointer to vector with magnetometers
+      * @param[in]  magn_on_off boolean value to connect or disconnect the magnetometers correction
       * @return void
       *
       */
-      void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag);
+      void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag, bool magn_on_off);
       
       
       /**

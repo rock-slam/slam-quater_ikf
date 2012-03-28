@@ -50,25 +50,25 @@ namespace filter
 
 
       /** Kalman filter state, error covariance and process noise covariance **/
-      x = Matrix <double,STATEVECTORSIZE,1>::Zero();
+      x = Matrix <double,IKFSTATEVECTORSIZE,1>::Zero();
       
-      Q = Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE>::Zero();            
+      Q = Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Zero();            
       Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (*Rg);
       Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       Q.block <NUMAXIS, NUMAXIS> (6,6) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       
       /** Initial error covariance **/
-      P = Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE>::Zero();
+      P = Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Zero();
       P.block <NUMAXIS, NUMAXIS> (0,0) = 0.01 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       P.block <NUMAXIS, NUMAXIS> (3,3) = 0.000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       P.block <NUMAXIS, NUMAXIS> (6,6) = 0.000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
       
-      H1 = Matrix <double,NUMAXIS,STATEVECTORSIZE>::Zero();
-      H2 = Matrix <double,NUMAXIS,STATEVECTORSIZE>::Zero();
+      H1 = Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE>::Zero();
+      H2 = Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE>::Zero();
       H1(0,6) = 1; H1(1,7) = 1; H1(2,8) = 1;
       
       /** System matrix A **/
-      A = Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE>::Zero();      
+      A = Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Zero();      
       A(0,3) = -0.5;A(1,4) = -0.5;A(2,5) = -0.5;
       
       /** Initial measurement noise **/
@@ -172,7 +172,7 @@ namespace filter
     /**
     * @brief Gets the current state vector of the filter
     */
-    Eigen::Matrix< double, STATEVECTORSIZE , 1  > ikf::getState()
+    Eigen::Matrix< double, IKFSTATEVECTORSIZE , 1  > ikf::getState()
     {
       return x;
 
@@ -181,7 +181,7 @@ namespace filter
     /**
     * @brief Gets Noise covariance matrix
     */
-    Eigen::Matrix< double, STATEVECTORSIZE , STATEVECTORSIZE> ikf::getCovariance()
+    Eigen::Matrix< double, IKFSTATEVECTORSIZE , IKFSTATEVECTORSIZE> ikf::getCovariance()
     {
 	return P;
     }
@@ -196,8 +196,8 @@ namespace filter
       Eigen::Matrix <double,NUMAXIS,1> angvelo; /**< Vec 2 product  matrix */
       Eigen::Matrix <double,QUATERSIZE,QUATERSIZE> omega4; /**< Quaternion integration matrix */
       Eigen::Matrix <double,QUATERSIZE,1> quat; /**< Quaternion integration matrix */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> dA; /**< Discrete System matrix */
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> Qd; /**< Discrete Q matrix */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> dA; /**< Discrete System matrix */
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Qd; /**< Discrete Q matrix */
       
       /** Compute the vector2product matrix with the angular velocity **/
       angvelo = (*u) - bghat; /** Eliminate the Bias **/
@@ -208,7 +208,7 @@ namespace filter
 		 
       /** Compute the dA Matrix **/
       A.block<NUMAXIS, NUMAXIS> (0,0) = -vec2product;
-      dA = Matrix<double,STATEVECTORSIZE,STATEVECTORSIZE>::Identity() + A * dt + A * A * pow(dt,2)/2;
+      dA = Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity() + A * dt + A * A * pow(dt,2)/2;
       
       /** Propagate the vector through the system **/
       x = dA * x;
@@ -247,17 +247,17 @@ namespace filter
      /**
     * @brief Performs the measurement and correction steps of the filter.
     */
-    void ikf::update(Eigen::Matrix< double, NUMAXIS , 1  >* acc, Eigen::Matrix< double, NUMAXIS , 1  >* mag)
+    void ikf::update(Eigen::Matrix< double, NUMAXIS , 1  >* acc, Eigen::Matrix< double, NUMAXIS , 1  >* mag, bool magn_on_off)
     {
       register int j;
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Cq; /**< Rotational matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> vec2product; /**< Vec 2 product  matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> fooR2; /**<  Measurement noise matrix from accelerometers matrix Ra*/
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> P1; /**< Error convariance matrix for measurement 1*/
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> P2; /**< Error convariance matrix for measurement 2*/
-      Eigen::Matrix <double,STATEVECTORSIZE,STATEVECTORSIZE> auxM; /**< Auxiliar matrix for computing Kalman gain in measurement*/
-      Eigen::Matrix <double,STATEVECTORSIZE, NUMAXIS> K1; /**< Kalman Gain matrix for measurement 1*/
-      Eigen::Matrix <double,STATEVECTORSIZE, NUMAXIS> K2; /**< Kalman Gain matrix for measurement 2*/
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> P1; /**< Error convariance matrix for measurement 1*/
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> P2; /**< Error convariance matrix for measurement 2*/
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> auxM; /**< Auxiliar matrix for computing Kalman gain in measurement*/
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE, NUMAXIS> K1; /**< Kalman Gain matrix for measurement 1*/
+      Eigen::Matrix <double,IKFSTATEVECTORSIZE, NUMAXIS> K2; /**< Kalman Gain matrix for measurement 2*/
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Uk; /**< Uk measurement noise convariance matrix for the adaptive algorithm */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Qstar; /**< External acceleration covariance matrix */
       Eigen::Quaternion <double> qe;  /**< Attitude error quaternion */
@@ -270,7 +270,9 @@ namespace filter
       Eigen::Matrix <double,NUMAXIS,1> z1; /**< Measurement vector 1 Acc */
       Eigen::Matrix <double,NUMAXIS,1> z2; /**< Measurement vector 2 Mag */
       Eigen::Matrix <double,NUMAXIS,1> auxvector; /**< Auxiliar vector variable */
-      Eigen::Matrix <double,NUMAXIS,1> auxvector2; /**< Measurement vector 1 */
+      //Eigen::Matrix <double,NUMAXIS,1> auxvector2; /**< Measurement vector 1 */
+      
+      auxvector << 0, 0, 1;
 	    
       /**----------------------- **/
       /** Measurement step 1 Acc **/
@@ -346,7 +348,7 @@ namespace filter
       
       /** Update the state vector and the covariance matrix **/
       x = x + K1 * (z1 - H1 * x);
-      P = (Matrix<double,STATEVECTORSIZE,STATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,STATEVECTORSIZE,STATEVECTORSIZE>::Identity()-K1*H1).transpose() + K1*(Ra+Qstar)*K1.transpose();
+      P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1).transpose() + K1*(Ra+Qstar)*K1.transpose();
       P = 0.5 * (P + P.transpose());
       
       /** Update the quaternion with the Indirect approach **/
@@ -369,53 +371,55 @@ namespace filter
       /** Measurement step 2 Mag   **/
       /** It only updates Yaw angle**/
       /**------------------------- **/
+      
+      if (magn_on_off == true)
+      {
     
-      /** Create the orientation matrix from the quaternion **/
-      Quaternion2DCM (&q4, &Cq);
-      
-      
-      /** Second measurement step **/
-      mtilde_body = Cq * mtilde;
-      vec2product << 0, -mtilde_body(2), mtilde_body(1),
+	/** Create the orientation matrix from the quaternion **/
+	Quaternion2DCM (&q4, &Cq);
+
+
+	/** Second measurement step **/
+	mtilde_body = Cq * mtilde;
+	vec2product << 0, -mtilde_body(2), mtilde_body(1),
 		    mtilde_body(2), 0, -mtilde_body(0),
 		    -mtilde_body(1), mtilde_body(0), 0;
 		    
-      /** Observation matrix **/
-      H2.block<NUMAXIS, NUMAXIS> (0,0) = 2*vec2product;
-      
-      /** Measurement vector **/
-      z2 = (*mag) - mtilde_body;
-      
-      P2 = Matrix<double, STATEVECTORSIZE, STATEVECTORSIZE>::Zero();
-      P2.block<NUMAXIS, NUMAXIS>(0,0) = P.block<NUMAXIS, NUMAXIS>(0,0);
-      
-      auxvector << 0,
-		   0,
-		   1;
-      auxvector = Cq * auxvector;
-      
-      /** Compute Kalman Gain **/
-      auxM = Matrix<double, STATEVECTORSIZE, STATEVECTORSIZE>::Zero();
-      auxM.block<NUMAXIS, NUMAXIS>(0,0) = auxvector * auxvector.transpose();
-      K2 = auxM * P2 * H2.transpose() * (H2*P2*H2.transpose() + Rm).inverse();
-     
-      /** Update the state vector and the covariance matrix **/
-      x = x + K2*(z2 - (H2*x));
-      P = P - K2 * H2 * P - P * H2.transpose() * K2.transpose() + K2*(H2*P*H2.transpose() + Rm)*K2.transpose();
-      P = 0.5 * (P + P.transpose());
-      
-      /** Update the quaternion with the Indirect approach **/
-      qe.w() = 1;
-      qe.x() = x(0);
-      qe.y() = x(1);
-      qe.z() = x(2);
-      q4 = q4 * qe;
-      
-      /** Normalize quaternion **/
-      q4.normalize();
-      
-      /** Reset the quaternion part of the state vector **/
-      x.block<NUMAXIS,1>(0,0) = Matrix<double, NUMAXIS, 1>::Zero();
+	/** Observation matrix **/
+	H2.block<NUMAXIS, NUMAXIS> (0,0) = 2*vec2product;
+
+	/** Measurement vector **/
+	z2 = (*mag) - mtilde_body;
+
+	P2 = Matrix<double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE>::Zero();
+	P2.block<NUMAXIS, NUMAXIS>(0,0) = P.block<NUMAXIS, NUMAXIS>(0,0);
+
+	auxvector << 0, 0, 1;
+	auxvector = Cq * auxvector;
+
+	/** Compute Kalman Gain **/
+	auxM = Matrix<double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE>::Zero();
+	auxM.block<NUMAXIS, NUMAXIS>(0,0) = auxvector * auxvector.transpose();
+	K2 = auxM * P2 * H2.transpose() * (H2*P2*H2.transpose() + Rm).inverse();
+
+	/** Update the state vector and the covariance matrix **/
+	x = x + K2*(z2 - (H2*x));
+	P = P - K2 * H2 * P - P * H2.transpose() * K2.transpose() + K2*(H2*P*H2.transpose() + Rm)*K2.transpose();
+	P = 0.5 * (P + P.transpose());
+
+	/** Update the quaternion with the Indirect approach **/
+	qe.w() = 1;
+	qe.x() = x(0);
+	qe.y() = x(1);
+	qe.z() = x(2);
+	q4 = q4 * qe;
+
+	/** Normalize quaternion **/
+	q4.normalize();
+
+	/** Reset the quaternion part of the state vector **/
+	x.block<NUMAXIS,1>(0,0) = Matrix<double, NUMAXIS, 1>::Zero();
+      }
       
       /**---------------------------- **/
       /** Reset the rest of the state **/
