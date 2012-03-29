@@ -176,6 +176,17 @@ namespace filter
 
     }
     
+     /**
+    * @brief Set the current state vector of the filter
+    */
+    void ikf::setState(Eigen::Matrix< double, IKFSTATEVECTORSIZE , 1  > *x_0)
+    {
+      x = (*x_0);
+      
+      return;
+    }
+    
+    
     /**
     * @brief Gets Noise covariance matrix
     */

@@ -27,7 +27,7 @@ namespace filter
   #ifndef PI
   #define PI 3.141592653589793238462643383279502884197169399375105820974944592307816406286 /**< Pi Number */
   #endif
-  #define M1 48 /**< Parameter for adaptive algorithm */
+  #define M1 5 /**< Parameter for adaptive algorithm */
   #define M2 3 /**< Parameter for adaptive algorithm */
   #define GAMMA 0.1 /**< Parameter for adaptive algorithm */
   #define R2COUNT 100 /**< Parameter for adaptive algorithm */
@@ -139,7 +139,7 @@ namespace filter
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> getCovariance();
       
       /**
-      * @brief This function Initilize Attitude
+      * @brief This function Initialize Attitude
       * 
       * Initial orientation value beforeestart the IKF 
       *
@@ -151,6 +151,21 @@ namespace filter
       *
       */
       int setAttitude (Eigen::Quaternion <double> *initq);
+      
+      /**
+      * @brief This function Initialize the State vector
+      * 
+      * The state vector is formed by 9 element.
+      * (0-2) -> the vector patr of a error quaternion
+      * (3-5) -> gyroscope bias estimation
+      * (6-8) -> accelerometer bias estimation
+      *
+      * @param[in] *x_0 a initial/desired state vector
+      *
+      * @return OK is everything all right. ERROR on other cases.
+      *
+      */
+      void setState (Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> *x_0);
       
       /**
       * @brief This function set the initial Omega matrix
