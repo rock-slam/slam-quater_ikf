@@ -175,16 +175,20 @@ namespace filter
       *
       * @author Javier Hidalgo Carrio.
       *
+      * @param[in] P_0 Initial state covariance matrix
       * @param[in] Ra measurement noise matrix of Accelerometers.
       * @param[in] Rg measurement noise matrix of Gyroscopes.
       * @param[in] Rm measurement noise matrix of Magnetometers.
+      * @param[in] Qbg covariance noise matrix of the gyroscopes bias
+      * @param[in] Qba covariance noise matrix of the accelerometers bias 
       * @param[in] g local gravitational value.
       * @param[in] alpha Dip angle
       *
       * @return void
       *
       */
-      void Init (Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm, double g, double alpha);
+      void Init(Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
+		   Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qbg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qba, double g, double alpha);
       
       /**
       * @brief Performs the prediction step of the filter.

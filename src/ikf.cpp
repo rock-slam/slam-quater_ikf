@@ -37,7 +37,8 @@ namespace filter
     * @brief This function Initilize the vectors and matrix of the IKF   
     */
     
-    void ikf::Init(Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm, double g, double alpha)
+    void ikf::Init(Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
+		   Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qbg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qba, double g, double alpha)
     {
   
       /** Gravitation acceleration **/
@@ -54,14 +55,11 @@ namespace filter
       
       Q = Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Zero();            
       Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (*Rg);
-      Q.block <NUMAXIS, NUMAXIS> (3,3) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
-      Q.block <NUMAXIS, NUMAXIS> (6,6) = 0.00000000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
+      Q.block <NUMAXIS, NUMAXIS> (3,3) = (*Qbg);
+      Q.block <NUMAXIS, NUMAXIS> (6,6) = (*Qba);
       
       /** Initial error covariance **/
-      P = Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Zero();
-      P.block <NUMAXIS, NUMAXIS> (0,0) = 0.01 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
-      P.block <NUMAXIS, NUMAXIS> (3,3) = 0.000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
-      P.block <NUMAXIS, NUMAXIS> (6,6) = 0.000001 * Matrix <double,NUMAXIS,NUMAXIS>::Identity();
+      P = (*P_0);
       
       H1 = Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE>::Zero();
       H2 = Matrix <double,NUMAXIS,IKFSTATEVECTORSIZE>::Zero();
