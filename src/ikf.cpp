@@ -71,6 +71,7 @@ namespace filter
       
       /** Initial measurement noise **/
       R = Matrix <double,NUMAXIS,NUMAXIS>::Zero();
+      RHist = Eigen::Matrix <double,NUMAXIS,NUMAXIS*M1>::Zero();
       
       /** Initial bias **/
       bghat = Matrix <double,NUMAXIS,1>::Zero();
@@ -81,6 +82,18 @@ namespace filter
 	  0 , 0 , 0 , 0,
           0 , 0 , 0 , 0,
           0 , 0 , 0 , 0;
+	  
+	
+      /** Initial quaternion in Init**/
+      q4.w() = 1.00;
+      q4.x() = 0.00;
+      q4.y() = 0.00;
+      q4.z() = 0.00;
+      
+      /** Default initial bias **/
+      bghat << 0.00, 0.00, 0.00;
+      bahat << 0.00, 0.00, 0.00;
+      
 	  
       /** Variable in the adaptive algorithm **/
       r1count = 0;
