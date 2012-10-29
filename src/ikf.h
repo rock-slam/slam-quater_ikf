@@ -73,7 +73,7 @@ namespace filter
      * Filter members
      */
     private:
-      unsigned int r1count; /**< Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
+      int r1count; /**< Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
       double r2count; /**< Variable used in the adaptive algorithm, to compute the final Qstart cov. matrix*/
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> x; /**< State vector */
       Eigen::Matrix <double,NUMAXIS,1> gtilde; /**< gravitation acceleration */

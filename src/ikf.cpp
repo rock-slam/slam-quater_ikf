@@ -221,7 +221,6 @@ namespace filter
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> dA; /**< Discrete System matrix */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Qd; /**< Discrete Q matrix */
       
-      
       /** Compute the vector2product matrix with the angular velocity **/
       angvelo = (*u) - bghat; /** Eliminate the Bias **/
       
@@ -366,31 +365,12 @@ namespace filter
       }
       
       /** Compute the Kalman Gain Matrix **/
-      if (magn_on_off == false)
-      {
-	P1 = Matrix<double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE>::Zero();
-	P1.block<NUMAXIS, NUMAXIS>(0,0) = P.block<NUMAXIS, NUMAXIS>(0,0);
-	
-	auxvector << 1, 1, 0;
-	auxvector = Cq * auxvector;
-
-	auxM = Matrix<double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE>::Zero();
-	auxM.block<NUMAXIS, NUMAXIS>(0,0) = auxvector * auxvector.transpose();
-	K1 = auxM * P1 * H1.transpose() * (H1*P1*H1.transpose() + Ra + Qstar).inverse();
-      }
-      else
-      {
-	P1 = P;
-	K1 = P1 * H1.transpose() * (H1 * P1 * H1.transpose() + Ra + Qstar).inverse(); //Qstart is the external acceleration covariance
-      }
+      P1 = P;
+      K1 = P1 * H1.transpose() * (H1 * P1 * H1.transpose() + Ra + Qstar).inverse(); //Qstart is the external acceleration covariance
       
-	
-//       std::cout<< "K1:\n"<<K1<<"\n";
-	
       /** Update the state vector and the covariance matrix **/
       x = x + K1 * (z1 - H1 * x);
       P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1).transpose() + K1*(Ra+Qstar)*K1.transpose();
-      
       P = 0.5 * (P + P.transpose());
       
       /** Update the quaternion with the Indirect approach **/
