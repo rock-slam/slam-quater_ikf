@@ -14,6 +14,7 @@
   <depend package="dummy-dependency-n" />
 -->
 <depend package="eigen3" />
+<depend package="base/types" />
 <!--DEPEND-ENTRY-->
   <versioncontrol type="git" url="" />
   <export>
