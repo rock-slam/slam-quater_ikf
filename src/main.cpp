@@ -9,5 +9,5 @@ int main(int argc, char** argv)
 {
 	filter::ikf IKF;
 
-	return OK;
+	return 0;
 }

@@ -7,68 +7,17 @@
 namespace filter
 {
   using namespace Eigen;
-  
-  /** General defines **/
-  #ifndef OK
-  #define OK	0  /**< Integer value in order to return when everything is all right. */
-  #endif
-  #ifndef ERROR
-  #define ERROR	-1  /**< Integer value in order to return when an error occured. */
-  #endif
 
-  /** IKF constant parameters **/
-  #ifndef IKFSTATEVECTORSIZE
-  #define IKFSTATEVECTORSIZE 9 /**< Number of variables of the vector state-space representation **/
-  #endif
-  #ifndef QUATERSIZE
-  #define QUATERSIZE 4 /**< Number of parameters of a quaternion **/
-  #endif
-
-  #ifndef PI
-  #define PI 3.141592653589793238462643383279502884197169399375105820974944592307816406286 /**< Pi Number */
-  #endif
-  #define M1 5 /**< Parameter for adaptive algorithm */
-  #define M2 3 /**< Parameter for adaptive algorithm */
-  #define GAMMA 0.1 /**< Parameter for adaptive algorithm */
-  #define R2COUNT 100 /**< Parameter for adaptive algorithm */
-  
-  #define D2R PI/180.00 /**< Convert degree to radian **/
-  #define R2D 180.00/PI /**< Convert radian to degree **/
-  
-  /** Sensors constant parameters **/
-  #ifndef NUMAXIS
-  #define NUMAXIS 3 /**< Number of axis sensed by the sensors **/
-  #endif
-  
-   /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
-  #ifndef Re
-  #define Re	6378137 /**< Equatorial radius in meters **/
-  #endif
-  #ifndef Rp
-  #define Rp	6378137 /**< Polar radius in meters **/
-  #endif
-  #ifndef ECC
-  #define ECC  0.0818191908426 /**< First eccentricity **/
-  #endif
-  #ifndef GRAVITY
-  #define GRAVITY 9.79766542 /**< Mean value of gravity value in m/s^2 **/
-  #endif
-  #ifndef GWGS0
-  #define GWGS0 9.7803267714 /**< Gravity value at the equator in m/s^2 **/
-  #endif
-  #ifndef GWGS1
-  #define GWGS1 0.00193185138639 /**< Gravity formula constant **/
-  #endif
-  #ifndef EARTHW
-  #define EARTHW  7.292115e-05 /**< Earth angular velocity in rad/s **/
-  #endif
-  
-  /** Commented due to Eigen3 update (with Eigen3 JacobiSVD new class this is not needed ) **/
-  // typedef Eigen::Matrix<double,NUMAXIS, NUMAXIS> MatrixMeasurement; /**< Measurement matrix type definition (necessary for SVD decomposition) */
-  
-  
   class ikf
   {
+    public:
+      enum CONSTS {
+        IKFSTATEVECTORSIZE = 9,
+        QUATERSIZE = 4,
+        NUMAXIS = 3,
+        M1 = 5
+      };
+
     /**
      * Filter members
      */
@@ -147,10 +96,10 @@ namespace filter
       *
       * @param[in] *initq pointer to quaternion with the initial orientation
       *
-      * @return OK is everything all right. ERROR on other cases.
+      * @return true if everything all right. false on other cases.
       *
       */
-      int setAttitude (Eigen::Quaternion <double> *initq);
+      bool setAttitude (Eigen::Quaternion <double> *initq);
       
       /**
       * @brief This function Initialize the State vector
@@ -177,10 +126,10 @@ namespace filter
       *
       * @param[in] *u pointer to vector with the angular velocity
       *
-      * @return OK is everything all right. ERROR on other cases.
+      * @return true if everything all right. false on other cases.
       *
       */
-      int setOmega (Eigen::Matrix <double,NUMAXIS,1>  *u);
+      bool setOmega (Eigen::Matrix <double,NUMAXIS,1>  *u);
       
       /**
       * @brief This function Initilize the vectors and matrix of the IKF

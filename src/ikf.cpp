@@ -24,6 +24,66 @@
 #include <Eigen/SVD> /**< Singular Value Decomposition (SVD) of Eigen */
 #include "ikf.h" /**< Indirect Kalman Filter */
 
+/** General defines **/
+#ifndef OK
+#define OK	0  /**< Integer value in order to return when everything is all right. */
+#endif
+#ifndef ERROR
+#define ERROR	-1  /**< Integer value in order to return when an error occured. */
+#endif
+
+/** IKF constant parameters **/
+#ifndef IKFSTATEVECTORSIZE
+#define IKFSTATEVECTORSIZE 9 /**< Number of variables of the vector state-space representation **/
+#endif
+#ifndef QUATERSIZE
+#define QUATERSIZE 4 /**< Number of parameters of a quaternion **/
+#endif
+
+#ifndef PI
+#define PI 3.141592653589793238462643383279502884197169399375105820974944592307816406286 /**< Pi Number */
+#endif
+#define M1 5 /**< Parameter for adaptive algorithm */
+#define M2 3 /**< Parameter for adaptive algorithm */
+#define GAMMA 0.1 /**< Parameter for adaptive algorithm */
+#define R2COUNT 100 /**< Parameter for adaptive algorithm */
+
+#define D2R PI/180.00 /**< Convert degree to radian **/
+#define R2D 180.00/PI /**< Convert radian to degree **/
+
+/** Sensors constant parameters **/
+#ifndef NUMAXIS
+#define NUMAXIS 3 /**< Number of axis sensed by the sensors **/
+#endif
+
+/** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
+#ifndef Re
+#define Re	6378137 /**< Equatorial radius in meters **/
+#endif
+#ifndef Rp
+#define Rp	6378137 /**< Polar radius in meters **/
+#endif
+#ifndef ECC
+#define ECC  0.0818191908426 /**< First eccentricity **/
+#endif
+#ifndef GRAVITY
+#define GRAVITY 9.79766542 /**< Mean value of gravity value in m/s^2 **/
+#endif
+#ifndef GWGS0
+#define GWGS0 9.7803267714 /**< Gravity value at the equator in m/s^2 **/
+#endif
+#ifndef GWGS1
+#define GWGS1 0.00193185138639 /**< Gravity formula constant **/
+#endif
+#ifndef EARTHW
+#define EARTHW  7.292115e-05 /**< Earth angular velocity in rad/s **/
+#endif
+
+/** Commented due to Eigen3 update (with Eigen3 JacobiSVD new class this is not needed ) **/
+// typedef Eigen::Matrix<double,NUMAXIS, NUMAXIS> MatrixMeasurement; /**< Measurement matrix type definition (necessary for SVD decomposition) */
+  
+  
+
 namespace filter
 {
   
@@ -123,23 +183,23 @@ namespace filter
     /**
     * @brief This function Initilize Attitude
     */
-    int ikf::setAttitude(Eigen::Quaternion< double > *initq)
+    bool ikf::setAttitude(Eigen::Quaternion< double > *initq)
     {
       if (initq != NULL)
       {
 	/** Initial orientation **/
 	q4 = (*initq);
 	
-	return OK;
+	return true;
       }
       
-      return ERROR;
+      return false;
     }
     
     /**
     * @brief This function set the initial Omega matrix
     */
-    int ikf::setOmega(Eigen::Matrix< double, NUMAXIS , 1  >* u)
+    bool ikf::setOmega(Eigen::Matrix< double, NUMAXIS , 1  >* u)
     {
       if (u != NULL)
       {
@@ -149,9 +209,9 @@ namespace filter
 	  (*u)(1), -(*u)(2), 0, (*u)(0),
 	  (*u)(2), (*u)(1), -(*u)(0), 0;
 	 
-	return OK;
+	return true;
       }
-      return ERROR;
+      return false;
     }
 
     /**
