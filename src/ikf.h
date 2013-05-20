@@ -10,13 +10,19 @@ namespace filter
 
   class ikf
   {
+
+    /** IKF constant parameters **/
     public:
       enum CONSTS {
         IKFSTATEVECTORSIZE = 9,
         QUATERSIZE = 4,
         NUMAXIS = 3,
-        M1 = 5
+        M1 = 5,
+        M2 = 3,
+        R2COUNT = 100
       };
+
+      static const double GAMMA = 0.1;
 
     /**
      * Filter members
