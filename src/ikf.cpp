@@ -22,6 +22,7 @@
 #include <algorithm> /**< Algorithm C++ Standard library */
 #include <Eigen/LU> /**< Lineal algebra of Eigen */
 #include <Eigen/SVD> /**< Singular Value Decomposition (SVD) of Eigen */
+#include <base/Pose.hpp>
 #include "ikf.h" /**< Indirect Kalman Filter */
 
 /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
@@ -190,7 +191,7 @@ namespace filter
       Eigen::Matrix <double, NUMAXIS, 1> euler;
       
       //std::cout << Eigen::Matrix3d(q4) << std::endl; 
-      Vector3d e = Eigen::Matrix3d(q4).eulerAngles(2,1,0);
+      Vector3d e = base::getEuler(q4);
        euler(0) = e[2]; 
        euler(1) = e[1]; 
        euler(2) = e[0]; 
