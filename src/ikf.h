@@ -1,8 +1,11 @@
 /**\file ikf.h
  * Header function file and defines
  */
+#include "AdaptiveAttitudeCov.hpp"
 #include <Eigen/Geometry> /**< Eigen data type for Matrix, Quaternion, etc... */
 
+/** Boost **/
+#include <boost/shared_ptr.hpp> /** For shared pointers **/
 
 namespace filter
 {
@@ -17,19 +20,12 @@ namespace filter
         IKFSTATEVECTORSIZE = 9,
         QUATERSIZE = 4,
         NUMAXIS = 3,
-        M1 = 5,
-        M2 = 3,
-        R2COUNT = 100
       };
-
-      static const double GAMMA = 0.1;
 
     /**
      * Filter members
      */
     private:
-      unsigned int r1count; /**< Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
-      double r2count; /**< Variable used in the adaptive algorithm, to compute the final Qstart cov. matrix*/
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> x; /**< State vector */
       Eigen::Matrix <double,NUMAXIS,1> gtilde; /**< gravitation acceleration */
       Eigen::Matrix <double,NUMAXIS,1> mtilde; /**< Magnetic dip angle */
@@ -38,8 +34,6 @@ namespace filter
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> P; /**< Error convariance matrix */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> A; /**< System matrix */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Q; /**< Process noise convariance matrix */
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS> R; /**< Measurement noise convariance matrix */
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS*M1> RHist; /**< History of M1 measurement noise convariance matrix (for the adaptive algorithm) */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Ra; /**< Measurement noise convariance matrix for acc */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rg; /**< Measurement noise convariance matrix for gyros */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> Rm; /**< Measurement noise convariance matrix for mag */
@@ -48,10 +42,14 @@ namespace filter
       Eigen::Matrix <double,NUMAXIS,1> bghat; /**< Estimated bias for gyroscope */
       Eigen::Matrix <double,NUMAXIS,1> bahat; /**< Estimated bias for accelerometer */
 
+      /** Object of Class for Adaptive Measurement of Attitude Covariance Matrix **/
+      boost::shared_ptr<filter::AdaptiveAttitudeCov> adapAtt;
+
+
     protected:
-    
+
     public:
-      
+
       /**
       * @brief Gets the current state vector of the filter
       * 
@@ -61,8 +59,8 @@ namespace filter
       *
       */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> getState();
-      
-      
+
+
        /**
       * @brief Gets the current orientation in Quaternion
       * 
@@ -72,7 +70,7 @@ namespace filter
       *
       */
       Eigen::Quaternion <double> getAttitude();
-      
+
       /**
       * @brief Gets the current orientation in Euler angles
       * 
@@ -82,7 +80,7 @@ namespace filter
       *
       */
       Eigen::Matrix <double, NUMAXIS, 1> getEuler();
-      
+
       /**
       * @brief Gets Noise covariance matrix
       * 
@@ -92,7 +90,7 @@ namespace filter
       *
       */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> getCovariance();
-      
+
       /**
       * @brief This function Initialize Attitude
       * 
@@ -106,7 +104,7 @@ namespace filter
       *
       */
       bool setAttitude (Eigen::Quaternion <double> *initq);
-      
+
       /**
       * @brief This function Initialize the State vector
       * 
@@ -121,7 +119,7 @@ namespace filter
       *
       */
       void setState (Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> *x_0);
-      
+
       /**
       * @brief This function set the initial Omega matrix
       * 
@@ -136,7 +134,37 @@ namespace filter
       *
       */
       bool setOmega (Eigen::Matrix <double,NUMAXIS,1>  *u);
-      
+
+      /**
+      * @brief On/Off initial bias
+      *
+      * Initial On/Off sensor bias. Otherwise the default
+      * in Init is set them to zero.
+      *
+      * @param[in] gbias vector with initial gyroscopes bias
+      * @param[in] abias vector with initial accelerometers bias
+      *
+      * @return void.
+      *
+      */
+      void setInitBias (const Eigen::Matrix<double, NUMAXIS, 1> &gbias,
+            const Eigen::Matrix<double, NUMAXIS, 1> &abias);
+
+     /**
+      * @brief Initial gravity
+      *
+      * Set initial gravity. If after initialization a new
+      * theoretical or measured gravity is available use this method.
+      * Note: always before start running the filter.
+      *
+      * @param[in] gravity initial gravity value
+      *
+      * @return void.
+      *
+      */
+
+      void setGravity(double gravity);
+
       /**
       * @brief This function Initilize the vectors and matrix of the IKF
       * 
@@ -159,7 +187,9 @@ namespace filter
       */
       void Init(Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
 		   Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qbg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qba, double g, double alpha);
-      
+
+      void initAdaptiveAttitude(const unsigned int M1, const unsigned int M2,
+                        const double gamma, const unsigned int r2count);
       /**
       * @brief Performs the prediction step of the filter.
       * 
@@ -176,7 +206,7 @@ namespace filter
       *
       */
       void predict(Eigen::Matrix <double,NUMAXIS,1>  *u, double dt);
-      
+
       /**
       * @brief Performs the measurement and correction steps of the filter.
       * 
@@ -196,13 +226,12 @@ namespace filter
       *
       * @param[in] *acc pointer to vector with accelerations
       * @param[in] *magn pointer to vector with magnetometers
-      * @param[in]  magn_on_off boolean value to connect or disconnect the magnetometers correction
+      * @param[in]  magn_on boolean value to connect or disconnect the magnetometers correction
       * @return void
       *
       */
-      void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag, bool magn_on_off);
-      
-      
+      void update(Eigen::Matrix <double,NUMAXIS,1>  *acc, Eigen::Matrix <double,NUMAXIS,1>  *mag, bool magn_on);
+
       /**
       * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
       * 
@@ -221,5 +250,4 @@ namespace filter
       void Quaternion2DCM(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS, NUMAXIS  >*C);
 
   };
-
 } // end namespace filter

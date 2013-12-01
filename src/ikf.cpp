@@ -48,28 +48,26 @@
 #define EARTHW  7.292115e-05 /**< Earth angular velocity in rad/s **/
 #endif
 
-/** Commented due to Eigen3 update (with Eigen3 JacobiSVD new class this is not needed ) **/
-// typedef Eigen::Matrix<double,ikf::NUMAXIS, ikf::NUMAXIS> MatrixMeasurement; /**< Measurement matrix type definition (necessary for SVD decomposition) */
-  
-  
-
 namespace filter
 {
-  
-    /** Namesapces to use **/
+
+    /** Name spaces to use **/
     using namespace Eigen;
     using namespace std;
-    
+
     /** Indirect Kalman Filter methods **/
- 
+
     /**
-    * @brief This function Initilize the vectors and matrix of the IKF   
+    * @brief This function Initialize the vectors and matrix of the IKF
     */
-    
-    void ikf::Init(Eigen::Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
-		   Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qbg, Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qba, double g, double alpha)
+    void ikf::Init(Eigen::Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE> *P_0,
+                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Ra,
+                    Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg,
+                    Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
+                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qbg,
+                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qba, double g, double alpha)
     {
-  
+
       /** Gravitation acceleration **/
       gtilde << 0, 0, g;
 
@@ -81,62 +79,52 @@ namespace filter
 
       /** Kalman filter state, error covariance and process noise covariance **/
       x = Matrix <double,ikf::IKFSTATEVECTORSIZE,1>::Zero();
-      
-      Q = Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE>::Zero();            
+
+      Q = Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE>::Zero();
       Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (*Rg);
       Q.block <NUMAXIS, NUMAXIS> (3,3) = (*Qbg);
       Q.block <NUMAXIS, NUMAXIS> (6,6) = (*Qba);
-      
+
       /** Initial error covariance **/
       P = (*P_0);
-      
+
       H1 = Matrix <double,NUMAXIS,ikf::IKFSTATEVECTORSIZE>::Zero();
       H2 = Matrix <double,NUMAXIS,ikf::IKFSTATEVECTORSIZE>::Zero();
       H1(0,6) = 1; H1(1,7) = 1; H1(2,8) = 1;
-      
+
       /** System matrix A **/
-      A = Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE>::Zero();      
+      A = Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE>::Zero();
       A(0,3) = -0.5;A(1,4) = -0.5;A(2,5) = -0.5;
-      
-      /** Initial measurement noise **/
-      R = Matrix <double,NUMAXIS,NUMAXIS>::Zero();
-      RHist = Eigen::Matrix <double,NUMAXIS,NUMAXIS*M1>::Zero();
-      
+
       /** Initial bias **/
       bghat = Matrix <double,NUMAXIS,1>::Zero();
       bahat = Matrix <double,NUMAXIS,1>::Zero();
-      
+
       /** Default omega matrix **/
       oldomega4 << 0 , 0 , 0 , 0,
 	  0 , 0 , 0 , 0,
           0 , 0 , 0 , 0,
           0 , 0 , 0 , 0;
-	  
+
 	
       /** Initial quaternion in Init**/
       q4.w() = 1.00;
       q4.x() = 0.00;
       q4.y() = 0.00;
       q4.z() = 0.00;
-      
+
       /** Default initial bias **/
       bghat << 0.00, 0.00, 0.00;
       bahat << 0.00, 0.00, 0.00;
-      
-	  
-      /** Variable in the adaptive algorithm **/
-      r1count = 0;
-      r2count = R2COUNT;
-      
+
       /** Fill matrix Rq, Ra and Rm **/
       ikf::Ra = (*Ra);
       ikf::Rg = (*Rg);
       ikf::Rm = (*Rm);
-      
+
       /** Print filter information **/
 //       std::cout<< "P:\n"<<P<<"\n";
 //       std::cout<< "Q:\n"<<Q<<"\n";
-//       std::cout<< "R:\n"<<R<<"\n";
 //       std::cout<< "H1:\n"<<H1<<"\n";
 //       std::cout<< "H2:\n"<<H2<<"\n";
 //       std::cout<< "A:\n"<<A<<"\n";
@@ -146,9 +134,34 @@ namespace filter
 //       std::cout<< "Rg:\n"<<(*Rg)<<"\n";
 //       std::cout<< "Rm:\n"<<(*Rm)<<"\n";
 
-      return;      
+      return;
     }
-    
+
+    void ikf::initAdaptiveAttitude(const unsigned int M1, const unsigned int M2,
+                        const double gamma, const unsigned int r2count)
+    {
+        this->adapAtt.reset(new filter::AdaptiveAttitudeCov (M1, M2, gamma, r2count));
+    }
+
+    void ikf::setInitBias(const Eigen::Matrix<double, NUMAXIS, 1> &gbias,
+            const Eigen::Matrix<double, NUMAXIS, 1> &abias)
+    {
+        this->bghat = gbias;
+        this->bahat = abias;
+
+        return;
+    }
+
+    /**
+    * @brief Set the current state vector of the filter
+    */
+    void ikf::setState(Eigen::Matrix< double, ikf::IKFSTATEVECTORSIZE , 1  > *x_0)
+    {
+      x = (*x_0);
+
+      return;
+    }
+
     /**
     * @brief This function Initilize Attitude
     */
@@ -161,10 +174,10 @@ namespace filter
 	
 	return true;
       }
-      
+
       return false;
     }
-    
+
     /**
     * @brief This function set the initial Omega matrix
     */
@@ -177,10 +190,19 @@ namespace filter
 	  (*u)(0), 0, (*u)(2), -(*u)(1),
 	  (*u)(1), -(*u)(2), 0, (*u)(0),
 	  (*u)(2), (*u)(1), -(*u)(0), 0;
-	 
+
 	return true;
       }
       return false;
+    }
+
+    /**
+    * @brief Gravity
+    */
+    void ikf::setGravity(double gravity)
+    {
+        gtilde << 0.00, 0.00, gravity;
+        return;
     }
 
     /**
@@ -189,7 +211,7 @@ namespace filter
     Eigen::Matrix< double, ikf::NUMAXIS , 1  > ikf::getEuler()
     {
       Eigen::Matrix <double, NUMAXIS, 1> euler;
-      
+
       //std::cout << Eigen::Matrix3d(q4) << std::endl; 
       Vector3d e = base::getEuler(q4);
        euler(0) = e[2]; 
@@ -197,10 +219,10 @@ namespace filter
        euler(2) = e[0]; 
 //       std::cout << "Attitude (getEuler): "<< euler(0)<<" "<<euler(1)<<" "<<euler(2)<<"\n";
        //std::cout << "Attitude in degrees (getEuler): "<< euler(0)*R2D<<" "<<euler(1)*R2D<<" "<<euler(2)*R2D<<"\n";
-      
+
       return euler;
     }
-    
+
     /**
     * @brief Gets the current orientation in Quaternion
     */
@@ -217,18 +239,8 @@ namespace filter
       return x;
 
     }
-    
-     /**
-    * @brief Set the current state vector of the filter
-    */
-    void ikf::setState(Eigen::Matrix< double, ikf::IKFSTATEVECTORSIZE , 1  > *x_0)
-    {
-      x = (*x_0);
-      
-      return;
-    }
-    
-    
+
+
     /**
     * @brief Gets Noise covariance matrix
     */
@@ -237,7 +249,7 @@ namespace filter
 	return P;
     }
 
-    
+
     /**
     * @brief Performs the prediction step of the filter.
     */
@@ -249,24 +261,24 @@ namespace filter
       Eigen::Matrix <double,QUATERSIZE,1> quat; /**< Quaternion integration matrix */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> dA; /**< Discrete System matrix */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Qd; /**< Discrete Q matrix */
-      
+
       /** Compute the vector2product matrix with the angular velocity **/
       angvelo = (*u) - bghat; /** Eliminate the Bias **/
-      
+
       vec2product << 0, -angvelo(2), angvelo(1),
 		    angvelo(2), 0, -angvelo(0),
 		    -angvelo(1), angvelo(0), 0;
-		 
+
       /** Compute the dA Matrix **/
       A.block<NUMAXIS, NUMAXIS> (0,0) = -vec2product;
-      dA = Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity() + A * dt + A * A * pow(dt,2)/2;
-      
+      dA = Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity() + A * dt + 0.5 *A * A * pow(dt,2);
+
       /** Propagate the vector through the system **/
       x = dA * x;
-      Qd = Q*dt + 0.5*dt*dt*A*Q + 0.5 *dt*dt*Q*A.transpose();
-      Qd = 0.5*(Qd + Qd.transpose());
+      Qd = Q*dt + 0.5*dt*A*Q + 0.5*dt*Q*A.transpose();
+      Qd = 0.5*(Qd + Qd.transpose());//Guarantee symmetry
       P = dA*P*dA.transpose() + Qd;
-      
+
       omega4 << 0,-angvelo(0), -angvelo(1), -angvelo(2),
 		angvelo(0), 0, angvelo(2), -angvelo(1),
 		angvelo(1), -angvelo(2), 0, angvelo(0),
@@ -276,32 +288,30 @@ namespace filter
       quat(1) = q4.x();
       quat(2) = q4.y();
       quat(3) = q4.z();
-      
-      
-      quat = (Matrix<double,QUATERSIZE,QUATERSIZE>::Identity() +(0.75 * omega4 *dt)- (0.25 * oldomega4 * dt) -
-      ((1/6) * angvelo.squaredNorm() * pow(dt,2) *  Matrix<double,QUATERSIZE,QUATERSIZE>::Identity()) -
-      ((1/24) * omega4 * oldomega4 * pow(dt,2)) - ((1/48) * angvelo.squaredNorm() * omega4 * pow(dt,3))) * quat;
-    
+
+      /** Third-order gyroscopes integration accuracy **/
+      quat = (Matrix<double,QUATERSIZE,QUATERSIZE>::Identity() +(0.75 * omega4 *dt)-(0.25 * oldomega4 * dt) -
+      ((1.0/6.0) * angvelo.squaredNorm() * pow(dt,2) *  Matrix<double,QUATERSIZE,QUATERSIZE>::Identity()) -
+      ((1.0/24.0) * omega4 * oldomega4 * pow(dt,2)) - ((1.0/48.0) * angvelo.squaredNorm() * omega4 * pow(dt,3))) * quat;
+
       q4.w() = quat(0);
       q4.x() = quat(1);
       q4.y() = quat(2);
       q4.z() = quat(3);
       q4.normalize();
-      
+
       oldomega4 = omega4;
-      
+
       return;
 
     }
-    
-    
+
+
      /**
     * @brief Performs the measurement and correction steps of the filter.
     */
-    void ikf::update(Eigen::Matrix< double, ikf::NUMAXIS , 1  >* acc, Eigen::Matrix< double, ikf::NUMAXIS , 1  >* mag, bool magn_on_off)
+    void ikf::update(Eigen::Matrix< double, ikf::NUMAXIS , 1  >* acc, Eigen::Matrix< double, ikf::NUMAXIS , 1  >* mag, bool magn_on)
     {
-      register int j;
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS> Cq; /**< Rotational matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> vec2product; /**< Vec 2 product  matrix */
       Eigen::Matrix <double,NUMAXIS,NUMAXIS> fooR2; /**<  Measurement noise matrix from accelerometers matrix Ra*/
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> P1; /**< Error convariance matrix for measurement 1*/
@@ -309,99 +319,43 @@ namespace filter
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> auxM; /**< Auxiliar matrix for computing Kalman gain in measurement*/
       Eigen::Matrix <double,IKFSTATEVECTORSIZE, NUMAXIS> K1; /**< Kalman Gain matrix for measurement 1*/
       Eigen::Matrix <double,IKFSTATEVECTORSIZE, NUMAXIS> K2; /**< Kalman Gain matrix for measurement 2*/
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS> Uk; /**< Uk measurement noise convariance matrix for the adaptive algorithm */
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS> Qstar; /**< External acceleration covariance matrix */
+      Eigen::Matrix <double,NUMAXIS,NUMAXIS> R1; /**< Acceleration covariance matrix */
       Eigen::Quaternion <double> qe;  /**< Attitude error quaternion */
       Eigen::Matrix <double,NUMAXIS,1> gtilde_body; /**< Gravitation in the body frame */
       Eigen::Matrix <double,NUMAXIS,1> mtilde_body; /**< Magnetic field in the body frame */
-      Eigen::Matrix <double,NUMAXIS,NUMAXIS> u; /**< Unitary matrix U for the SVD decomposition */
-      Eigen::Matrix <double,NUMAXIS,1> s; /**< Unitary matrix V for the SVD decomposition */
-      Eigen::Matrix <double,NUMAXIS,1> lambda; /**< Lambda vector for the adaptive algorithm */
-      Eigen::Matrix <double,NUMAXIS,1> mu; /**< mu vector for the adaptive algorithm */
       Eigen::Matrix <double,NUMAXIS,1> z1; /**< Measurement vector 1 Acc */
       Eigen::Matrix <double,NUMAXIS,1> z2; /**< Measurement vector 2 Mag */
       Eigen::Matrix <double,NUMAXIS,1> auxvector; /**< Auxiliar vector variable */
-      //Eigen::Matrix <double,NUMAXIS,1> auxvector2; /**< Measurement vector 1 */
-      
-      auxvector << 0, 0, 1;
-	    
+
+
       /**----------------------- **/
       /** Measurement step 1 Acc **/
       /**----------------------- **/
-      
-      /** Create the orientation matrix from the quaternion **/
-      Quaternion2DCM (&q4, &Cq);
-      
+
       /** First measurement step (Pitch and Roll correction from Acc) **/
-      gtilde_body = Cq * gtilde;
+      gtilde_body = q4.inverse() * gtilde;
       vec2product << 0, -gtilde_body(2), gtilde_body(1),
 		    gtilde_body(2), 0, -gtilde_body(0),
 		    -gtilde_body(1), gtilde_body(0), 0;
-		    
+
       H1.block<NUMAXIS, NUMAXIS> (0,0) = 2*vec2product;
-      
-      /** The adaptive algorithm, the Uk matrix and SVD part **/
+
+      /** Measurement **/
       z1 = (*acc) - bahat - gtilde_body;
-      R = (z1 - H1*x) * (z1 - H1*x).transpose();
-      RHist.block <NUMAXIS, NUMAXIS> (0, (r1count*(M1-1))%M1) = R;
-      
-      /** r1count + 1 modulus the number of history M1 **/
-      r1count++; 
 
-      
-      /** Starting the Uk is R **/
-      Uk = R;
-      for (j=0; j<M1; j++)
-      {
-	Uk = Uk + RHist.block <NUMAXIS, NUMAXIS> (0,NUMAXIS*j);
-      }
-      
-        Uk = Uk / (M1);
-      
-      
-      fooR2 = H1*P*H1.transpose() + Ra;
-      
-      /**
-       * Single Value Decomposition
-       */
-      JacobiSVD <MatrixXd > svdOfR(Uk, ComputeThinU);
+      /** The adaptive algorithm **/
+      R1 = adapAtt->matrix<IKFSTATEVECTORSIZE> (x, P, z1, H1, Ra);
 
-      s = svdOfR.singularValues();
-      u = svdOfR.matrixU();
-      
-      lambda << s(0), s(1), s(2);
-     
-      mu(0) = (u.transpose().row(0) * fooR2).dot(u.col(0));
-      mu(1) = (u.transpose().row(1) * fooR2).dot(u.col(1));
-      mu(2) = (u.transpose().row(2) * fooR2).dot(u.col(2));
-      
-      if ((lambda - mu).maxCoeff() > ikf::GAMMA)
-      {
-	r2count = 0;
-	auxvector(0) = max(lambda(0)-mu(0),(double)0.00);
-	auxvector(1) = max(lambda(1)-mu(1),(double)0.00);
-	auxvector(2) = max(lambda(2)-mu(2),(double)0.00);
-	
-	Qstar = auxvector(0) * u.col(0) * u.col(0).transpose() + auxvector(1) * u.col(1) * u.col(1).transpose() + auxvector(2) * u.col(2) * u.col(2).transpose();
-      }
-      else
-      {
-	r2count ++;
-	if (r2count < M2)
-	  Qstar = auxvector(0) * u.col(0) * u.col(0).transpose() + auxvector(1) * u.col(1) * u.col(1).transpose() + auxvector(2) * u.col(2) * u.col(2).transpose();
-	else
-	  Qstar = Matrix<double, NUMAXIS, NUMAXIS>::Zero();
-      }
-      
       /** Compute the Kalman Gain Matrix **/
       P1 = P;
-      K1 = P1 * H1.transpose() * (H1 * P1 * H1.transpose() + Ra + Qstar).inverse(); //Qstart is the external acceleration covariance
-      
+      K1 = P1 * H1.transpose() * (H1 * P1 * H1.transpose() + R1).inverse();
+
       /** Update the state vector and the covariance matrix **/
       x = x + K1 * (z1 - H1 * x);
-      P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1).transpose() + K1*(Ra+Qstar)*K1.transpose();
-      P = 0.5 * (P + P.transpose());
-      
+      P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1).transpose() +
+          K1*R1*K1.transpose();
+      P = 0.5 * (P + P.transpose());//Guarantee symmetry
+
       /** Update the quaternion with the Indirect approach **/
       /** This is necessary mainly because after(in the 2 measurement) C(q) is computed **/
       qe.w() = 1;
@@ -409,33 +363,28 @@ namespace filter
       qe.y() = x(1);
       qe.z() = x(2);
       q4 = q4 * qe;
-      
+
       /** Normalize quaternion **/
       q4.normalize();
 
-      
       /** Reset the quaternion part of the state vector **/
       x.block<NUMAXIS,1>(0,0) = Matrix<double, NUMAXIS, 1>::Zero();
-      
-      
+
+
       /**------------------------- **/
       /** Measurement step 2 Mag   **/
       /** It only updates Yaw angle**/
       /**------------------------- **/
-      
-      if (magn_on_off == true)
-      {
-    
-	/** Create the orientation matrix from the quaternion **/
-	Quaternion2DCM (&q4, &Cq);
 
+      if (magn_on)
+      {
 
 	/** Second measurement step **/
-	mtilde_body = Cq * mtilde;
+	mtilde_body = q4.inverse() * mtilde;
 	vec2product << 0, -mtilde_body(2), mtilde_body(1),
 		    mtilde_body(2), 0, -mtilde_body(0),
 		    -mtilde_body(1), mtilde_body(0), 0;
-		    
+
 	/** Observation matrix **/
 	H2.block<NUMAXIS, NUMAXIS> (0,0) = 2*vec2product;
 
@@ -446,7 +395,7 @@ namespace filter
 	P2.block<NUMAXIS, NUMAXIS>(0,0) = P.block<NUMAXIS, NUMAXIS>(0,0);
 
 	auxvector << 0, 0, 1;
-	auxvector = Cq * auxvector;
+	auxvector = q4.inverse() * auxvector;
 
 	/** Compute Kalman Gain **/
 	auxM = Matrix<double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE>::Zero();
@@ -471,20 +420,20 @@ namespace filter
 	/** Reset the quaternion part of the state vector **/
 	x.block<NUMAXIS,1>(0,0) = Matrix<double, NUMAXIS, 1>::Zero();
       }
-      
+
       /**---------------------------- **/
       /** Reset the rest of the state **/
       /**---------------------------- **/
       bghat = bghat + x.block<NUMAXIS, 1> (3,0);
       x.block<NUMAXIS, 1> (3,0) = Matrix <double, NUMAXIS, 1>::Zero();
-      
+
       bahat = bahat + x.block<NUMAXIS, 1> (6,0);
       x.block<NUMAXIS, 1> (6,0) = Matrix <double, NUMAXIS, 1>::Zero();
-      
+
       return;
     }
 
-       
+
     /**
     * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
     */
@@ -511,7 +460,7 @@ namespace filter
 	(*C)(2,1) = 2 * q2 * q3 - 2 * q0 * q1;
 	(*C)(2,2) = 2 * q0 * q0 + 2 * q3 * q3 - 1;	
       }
-      
+
       return;
     }
 
