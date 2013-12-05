@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#define DEBUG_PRINTS 1
+//#define DEBUG_PRINTS 1
 
 namespace filter
 {
@@ -31,10 +31,11 @@ namespace filter
     public:
 
         AdaptiveAttitudeCov(const unsigned int M1, const unsigned int M2,
-                        const double GAMMA, const unsigned int R2COUNT)
-            :m1(M1), m2(M2), gamma(GAMMA), r2count(R2COUNT)
+                        const double GAMMA)
+            :m1(M1), m2(M2), gamma(GAMMA)
         {
             r1count = 0;
+            r2count = M2;
             RHist.resize(M1);
             for (std::vector< Eigen::Matrix3d, Eigen::aligned_allocator < Eigen::Matrix3d > >::iterator it = RHist.begin()
                     ; it != RHist.end(); ++it)
@@ -92,7 +93,7 @@ namespace filter
             Uk.setZero();
 
             /** Starting the Uk is R **/
-            for (register int j=0; j<static_cast<int>(m1); j++)
+            for (register int j=0; j<static_cast<int>(m1); ++j)
             {
                 Uk += RHist[j];
             }
@@ -123,7 +124,7 @@ namespace filter
             {
 
                 #ifdef DEBUG_PRINTS
-                std::cout<<"[ADAPTIVE_ATTITUDE] Bigger than GAMMA("<<gamma<<")\n";
+                std::cout<<"[ADAPTIVE_ATTITUDE] "<<(lambda - mu).maxCoeff() <<" Bigger than Gamma("<<gamma<<")\n";
                 #endif
 
                 r2count = 0;
@@ -137,7 +138,7 @@ namespace filter
             else
             {
                 #ifdef DEBUG_PRINTS
-                std::cout<<"[ADAPTIVE_ATTITUDE] Lower than GAMMA("<<gamma<<") r2count: "<<r2count<<"\n";
+                std::cout<<"[ADAPTIVE_ATTITUDE] "<<(lambda - mu).maxCoeff() <<" Lower than Gamma("<<gamma<<") r2count: "<<r2count<<"\n";
                 #endif
 
                 r2count ++;

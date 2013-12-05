@@ -50,7 +50,17 @@ namespace filter
 
     public:
 
-      /**
+    /**
+    * @brief Gets the current gyroscopes bias
+    */
+    Eigen::Matrix<double, ikf::NUMAXIS, 1> getGyroBias();
+
+    /**
+    * @brief Gets the current accelerometers bias
+    */
+    Eigen::Matrix<double, ikf::NUMAXIS, 1> getAccBias();
+
+     /**
       * @brief Gets the current state vector of the filter
       * 
       * @author Javier Hidalgo Carrio.
@@ -59,6 +69,11 @@ namespace filter
       *
       */
       Eigen::Matrix <double,IKFSTATEVECTORSIZE,1> getState();
+
+      /**
+      * @brief Gets gravity in IMU body frame
+      */
+      Eigen::Matrix<double, ikf::NUMAXIS, 1> getGravityinBody();
 
 
        /**
@@ -109,7 +124,7 @@ namespace filter
       * @brief This function Initialize the State vector
       * 
       * The state vector is formed by 9 element.
-      * (0-2) -> the vector patr of a error quaternion
+      * (0-2) -> the vector part of a error quaternion
       * (3-5) -> gyroscope bias estimation
       * (6-8) -> accelerometer bias estimation
       *
@@ -188,8 +203,7 @@ namespace filter
       void Init(Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
 		   Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qbg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qba, double g, double alpha);
 
-      void initAdaptiveAttitude(const unsigned int M1, const unsigned int M2,
-                        const double gamma, const unsigned int r2count);
+      void initAdaptiveAttitude(const unsigned int M1, const unsigned int M2, const double gamma);
       /**
       * @brief Performs the prediction step of the filter.
       * 

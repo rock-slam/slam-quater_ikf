@@ -48,6 +48,9 @@
 #define EARTHW  7.292115e-05 /**< Earth angular velocity in rad/s **/
 #endif
 
+
+//#define DEBUG_PRINTS 1
+
 namespace filter
 {
 
@@ -123,24 +126,26 @@ namespace filter
       ikf::Rm = (*Rm);
 
       /** Print filter information **/
-//       std::cout<< "P:\n"<<P<<"\n";
-//       std::cout<< "Q:\n"<<Q<<"\n";
-//       std::cout<< "H1:\n"<<H1<<"\n";
-//       std::cout<< "H2:\n"<<H2<<"\n";
-//       std::cout<< "A:\n"<<A<<"\n";
-//       std::cout<< "mtilde:\n"<<mtilde<<"\n";
-//       std::cout<< "gtilde:\n"<<gtilde<<"\n";
-//       std::cout<< "Ra:\n"<<(*Ra)<<"\n";
-//       std::cout<< "Rg:\n"<<(*Rg)<<"\n";
-//       std::cout<< "Rm:\n"<<(*Rm)<<"\n";
+      #ifdef DEBUG_PRINTS
+      std::cout<< "P:\n"<<P<<"\n";
+      std::cout<< "Q:\n"<<Q<<"\n";
+      std::cout<< "H1:\n"<<H1<<"\n";
+      std::cout<< "H2:\n"<<H2<<"\n";
+      std::cout<< "A:\n"<<A<<"\n";
+      std::cout<< "mtilde:\n"<<mtilde<<"\n";
+      std::cout<< "gtilde:\n"<<gtilde<<"\n";
+      std::cout<< "Ra:\n"<<(*Ra)<<"\n";
+      std::cout<< "Rg:\n"<<(*Rg)<<"\n";
+      std::cout<< "Rm:\n"<<(*Rm)<<"\n";
+      #endif
 
       return;
     }
 
     void ikf::initAdaptiveAttitude(const unsigned int M1, const unsigned int M2,
-                        const double gamma, const unsigned int r2count)
+                        const double gamma)
     {
-        this->adapAtt.reset(new filter::AdaptiveAttitudeCov (M1, M2, gamma, r2count));
+        this->adapAtt.reset(new filter::AdaptiveAttitudeCov (M1, M2, gamma));
     }
 
     void ikf::setInitBias(const Eigen::Matrix<double, NUMAXIS, 1> &gbias,
@@ -232,6 +237,23 @@ namespace filter
     }
 
     /**
+    * @brief Gets the current gyroscopes bias
+    */
+    Eigen::Matrix<double, ikf::NUMAXIS, 1> ikf::getGyroBias()
+    {
+        return this->bghat;
+    }
+
+    /**
+    * @brief Gets the current accelerometers bias
+    */
+    Eigen::Matrix<double, ikf::NUMAXIS, 1> ikf::getAccBias()
+    {
+        return this->bahat;
+    }
+
+
+    /**
     * @brief Gets the current state vector of the filter
     */
     Eigen::Matrix< double, ikf::IKFSTATEVECTORSIZE , 1  > ikf::getState()
@@ -240,6 +262,13 @@ namespace filter
 
     }
 
+    /**
+    * @brief Gets gravity in IMU body frame
+    */
+    Eigen::Matrix<double, ikf::NUMAXIS, 1> ikf::getGravityinBody()
+    {
+        return q4.inverse() * gtilde;
+    }
 
     /**
     * @brief Gets Noise covariance matrix
@@ -343,18 +372,37 @@ namespace filter
       /** Measurement **/
       z1 = (*acc) - bahat - gtilde_body;
 
+      #ifdef DEBUG_PRINTS
+      std::cout<<"acc:\n"<<*acc<<"\n";
+      std::cout<<"z1:\n"<<z1<<"\n";
+      std::cout<<"g_body:\n"<<gtilde_body<<"\n";
+      #endif
+
       /** The adaptive algorithm **/
       R1 = adapAtt->matrix<IKFSTATEVECTORSIZE> (x, P, z1, H1, Ra);
 
       /** Compute the Kalman Gain Matrix **/
       P1 = P;
-      K1 = P1 * H1.transpose() * (H1 * P1 * H1.transpose() + R1).inverse();
+      Eigen::Matrix<double, NUMAXIS, NUMAXIS> S1, S1_inverse;
+      S1 = H1 * P1 * H1.transpose() + R1;
+      S1_inverse = S1.inverse();
+      K1 = P1 * H1.transpose() * S1_inverse;
+      Eigen::Matrix<double, NUMAXIS, 1> innovation = (z1 - H1 * x);
 
       /** Update the state vector and the covariance matrix **/
-      x = x + K1 * (z1 - H1 * x);
-      P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()-K1*H1).transpose() +
-          K1*R1*K1.transpose();
+      x = x + K1 * innovation;
+      P = (Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
+              -K1*H1)*P*(Matrix<double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
+              -K1*H1).transpose() + K1*R1*K1.transpose();
       P = 0.5 * (P + P.transpose());//Guarantee symmetry
+
+      #ifdef DEBUG_PRINTS
+      std::cout<<"x(k+1|k+1):\n"<<x<<"\n";
+      std::cout<<"P(k+1|k+1):\n"<<P<<"\n";
+      std::cout<<"innovation:\n"<<innovation<<"\n";
+      std::cout<<"K1:\n"<<K1<<"\n";
+      std::cout<<"R1:\n"<<R1<<"\n";
+      #endif
 
       /** Update the quaternion with the Indirect approach **/
       /** This is necessary mainly because after(in the 2 measurement) C(q) is computed **/
@@ -429,6 +477,12 @@ namespace filter
 
       bahat = bahat + x.block<NUMAXIS, 1> (6,0);
       x.block<NUMAXIS, 1> (6,0) = Matrix <double, NUMAXIS, 1>::Zero();
+
+      #ifdef DEBUG_PRINTS
+      std::cout<<"bahat:\n"<<bahat<<"\n";
+      std::cout<<"bghat:\n"<<bghat<<"\n";
+      #endif
+
 
       return;
     }
