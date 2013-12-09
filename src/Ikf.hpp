@@ -1,8 +1,24 @@
-/**\file ikf.h
- * Header function file and defines
+/**\file ikf.hpp
+ *
+ * This class has the primitive methods for an Indirect Kalman Filter implementation
+ * for an Attitude and Heading Reference System - AHRS. The filter is Quaternion
+ * based using accelerometers, gyroscopes and magnetometers. The filter performs the
+ * prediction step based on the gyroscopes and therefore quaternion integration.
+ * The measurement is formed by two step. First measurement step uses the accelerometers
+ * in order to correct the pitch and roll angles. Second measurement step uses the
+ * magnetometers only for the yaw angle. The first one estimates external acceleration
+ * and compensate it increasing the measurement noise matrix.
+ *
+ * This indirect Kalman filter is based on the paper:  Young Soo Suh, Member, IEEE
+ * "Orientation estimation using a quaternion-based indirect Klaman filter with adaptive estimation of external acceleration"
+ *
+ * @author Javier Hidalgo Carrio | DFKI RIC Bremen | javier.hidalgo_carrio@dfki.de
+ * @date June 2011.
+ * @version 1.0.
  */
+
 #include "AdaptiveAttitudeCov.hpp"
-#include <Eigen/Geometry> /**< Eigen data type for Matrix, Quaternion, etc... */
+#include <Eigen/Geometry> /** Eigen data type for Matrix, Quaternion, etc... */
 
 /** Boost **/
 #include <boost/shared_ptr.hpp> /** For shared pointers **/

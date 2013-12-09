@@ -1,21 +1,4 @@
 /**\file ikf.cpp
- *
- * This class has the primitive methods for an Indirect Kalman Filter implementation
- * for an Attitude and Heading Reference System - AHRS. The filter is Quaternion
- * based using accelerometers, gyroscopes and magnetometers. The filter performs the
- * prediction step based on the gyroscopes and therefore quaternion integration.
- * The measurement is formed by two step. First measurement step uses the accelerometers
- * in order to correct the pitch and roll angles. Second measurement step uses the
- * magnetometers only for the yaw angle. The first one estimates external acceleration
- * and compensate it increasing the measurement noise matrix.
- * 
- * This indirect Kalman filter is based on the paper:  Young Soo Suh, Member, IEEE
- * "Orientation estimation using a quaternion-based indirect Klaman filter with adaptive estimation of external acceleration"
- * A copy if the manuscript can be found in the /doc folder of the library.
- * 
- * @author Javier Hidalgo Carrio | DFKI RIC Bremen | javier.hidalgo_carrio@dfki.de
- * @date June 2011.
- * @version 1.0.
  */
 
 #include <iostream> /**< IO C++ Standard library */
@@ -138,9 +121,9 @@ namespace filter
       std::cout<< "A:\n"<<A<<"\n";
       std::cout<< "mtilde:\n"<<mtilde<<"\n";
       std::cout<< "gtilde:\n"<<gtilde<<"\n";
-      std::cout<< "Ra:\n"<<(*Ra)<<"\n";
-      std::cout<< "Rg:\n"<<(*Rg)<<"\n";
-      std::cout<< "Rm:\n"<<(*Rm)<<"\n";
+      std::cout<< "Ra:\n"<<Ra<<"\n";
+      std::cout<< "Rg:\n"<<Rg<<"\n";
+      std::cout<< "Rm:\n"<<Rm<<"\n";
       #endif
 
       return;
@@ -172,7 +155,7 @@ namespace filter
     }
 
     /**
-    * @brief This function Initilize Attitude
+    * @brief This function Initialize Attitude
     */
     bool ikf::setAttitude(Eigen::Quaternion< double > *initq)
     {
