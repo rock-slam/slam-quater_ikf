@@ -47,6 +47,7 @@ namespace filter
 
 
     protected:
+      void initAdaptiveAttitude(const unsigned int M1, const unsigned int M2, const double gamma);
 
     public:
 
@@ -181,6 +182,17 @@ namespace filter
       void setGravity(double gravity);
 
       /**
+      * @brief Set the filter covariance
+      *
+      * @param[in] Pk covariance matrix of appropriate dimension
+      *
+      * @return void.
+      *
+      */
+
+      void setCovariance(const Eigen::Matrix< double, ikf::IKFSTATEVECTORSIZE , ikf::IKFSTATEVECTORSIZE> &Pk);
+
+      /**
       * @brief This function Initilize the vectors and matrix of the IKF
       * 
       * This method receives the measurement noise matrix of the sensors
@@ -200,10 +212,14 @@ namespace filter
       * @return void
       *
       */
-      void Init(Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> *P_0, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Ra, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
-		   Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qbg, Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Qba, double g, double alpha);
+      void Init(const Eigen::Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE> &P_0,
+                const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Ra,
+                const Eigen::Matrix <double,NUMAXIS,NUMAXIS> &Rg,
+                const Eigen::Matrix <double,NUMAXIS,NUMAXIS> &Rm,
+                const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Qbg,
+                const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Qba,
+                double g, double alpha, unsigned int m1, unsigned int m2, double gamma);
 
-      void initAdaptiveAttitude(const unsigned int M1, const unsigned int M2, const double gamma);
       /**
       * @brief Performs the prediction step of the filter.
       * 
@@ -263,5 +279,53 @@ namespace filter
       */
       void Quaternion2DCM(Eigen::Quaternion< double >* q, Eigen::Matrix< double, NUMAXIS, NUMAXIS  >*C);
 
+      /**
+      * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
+      */
+      template <typename _MatrixType>
+        static _MatrixType guaranteeSPD (const _MatrixType &A)
+        {
+            _MatrixType spdA;
+            Eigen::VectorXd s;
+            s.resize(A.rows(), 1);
+
+            /**
+             * Single Value Decomposition
+            */
+            Eigen::JacobiSVD <Eigen::MatrixXd > svdOfA (A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+            s = svdOfA.singularValues(); //!eigenvalues
+
+            #ifdef DEBUG_PRINTS
+            std::cout<<"[SPD-SVD] s: \n"<<s<<"\n";
+            std::cout<<"[SPD-SVD] svdOfA.matrixU():\n"<<svdOfA.matrixU()<<"\n";
+            std::cout<<"[SPD-SVD] svdOfA.matrixV():\n"<<svdOfA.matrixV()<<"\n";
+
+            Eigen::EigenSolver<_MatrixType> eig(A);
+            std::cout << "[SPD-SVD] BEFORE: eigen values: " << eig.eigenvalues().transpose() << std::endl;
+            #endif
+
+            for (register int i=0; i<s.size(); ++i)
+            {
+                #ifdef DEBUG_PRINTS
+                std::cout<<"[SPD-SVD] i["<<i<<"]\n";
+                #endif
+
+                if (s(i) < 0.00)
+                    s(i) = 0.00;
+            }
+
+            spdA = svdOfA.matrixU() * s.matrix().asDiagonal() * svdOfA.matrixV();
+
+            #ifdef DEBUG_PRINTS
+            Eigen::EigenSolver<_MatrixType> eigSPD(spdA);
+            if (eig.eigenvalues() == eigSPD.eigenvalues())
+                std::cout<<"[SPD-SVD] EQUAL!!\n";
+
+            std::cout << "[SPD-SVD] AFTER: eigen values: " << eigSPD.eigenvalues().transpose() << std::endl;
+            #endif
+
+            return spdA;
+        };
   };
 } // end namespace filter

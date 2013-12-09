@@ -23,7 +23,7 @@
 #include <Eigen/LU> /**< Lineal algebra of Eigen */
 #include <Eigen/SVD> /**< Singular Value Decomposition (SVD) of Eigen */
 #include <base/Pose.hpp>
-#include "ikf.h" /**< Indirect Kalman Filter */
+#include "Ikf.hpp" /**< Indirect Kalman Filter */
 
 /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
 #ifndef Re
@@ -63,12 +63,13 @@ namespace filter
     /**
     * @brief This function Initialize the vectors and matrix of the IKF
     */
-    void ikf::Init(Eigen::Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE> *P_0,
-                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Ra,
-                    Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rg,
-                    Eigen::Matrix <double,NUMAXIS,NUMAXIS> *Rm,
-                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qbg,
-                    Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> *Qba, double g, double alpha)
+    void ikf::Init(const Eigen::Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE> &P_0,
+                    const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Ra,
+                    const Eigen::Matrix <double,NUMAXIS,NUMAXIS> &Rg,
+                    const Eigen::Matrix <double,NUMAXIS,NUMAXIS> &Rm,
+                    const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Qbg,
+                    const Eigen::Matrix <double,ikf::NUMAXIS,ikf::NUMAXIS> &Qba,
+                    double g, double alpha, unsigned int m1, unsigned int m2, double gamma)
     {
 
       /** Gravitation acceleration **/
@@ -84,12 +85,12 @@ namespace filter
       x = Matrix <double,ikf::IKFSTATEVECTORSIZE,1>::Zero();
 
       Q = Matrix <double,ikf::IKFSTATEVECTORSIZE,ikf::IKFSTATEVECTORSIZE>::Zero();
-      Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (*Rg);
-      Q.block <NUMAXIS, NUMAXIS> (3,3) = (*Qbg);
-      Q.block <NUMAXIS, NUMAXIS> (6,6) = (*Qba);
+      Q.block <NUMAXIS, NUMAXIS> (0,0) = 0.25 * (Rg);
+      Q.block <NUMAXIS, NUMAXIS> (3,3) = (Qbg);
+      Q.block <NUMAXIS, NUMAXIS> (6,6) = (Qba);
 
       /** Initial error covariance **/
-      P = (*P_0);
+      P = (P_0);
 
       H1 = Matrix <double,NUMAXIS,ikf::IKFSTATEVECTORSIZE>::Zero();
       H2 = Matrix <double,NUMAXIS,ikf::IKFSTATEVECTORSIZE>::Zero();
@@ -121,9 +122,12 @@ namespace filter
       bahat << 0.00, 0.00, 0.00;
 
       /** Fill matrix Rq, Ra and Rm **/
-      ikf::Ra = (*Ra);
-      ikf::Rg = (*Rg);
-      ikf::Rm = (*Rm);
+      this->ikf::Ra = (Ra);
+      this->ikf::Rg = (Rg);
+      this->ikf::Rm = (Rm);
+
+      /** Initialize adaptive object **/
+      initAdaptiveAttitude(m1, m2, gamma);
 
       /** Print filter information **/
       #ifdef DEBUG_PRINTS
@@ -207,6 +211,15 @@ namespace filter
     void ikf::setGravity(double gravity)
     {
         gtilde << 0.00, 0.00, gravity;
+        return;
+    }
+
+    /**
+    * @brief Set Noise covariance matrix
+    */
+    void ikf::setCovariance(const Eigen::Matrix< double, ikf::IKFSTATEVECTORSIZE , ikf::IKFSTATEVECTORSIZE> &Pk)
+    {
+        P = Pk;
         return;
     }
 

@@ -3,7 +3,7 @@
  */
 
 #include <iostream> /**< IO C++ Standard library */
-#include "ikf.h" /**< IKF header */
+#include "Ikf.hpp" /**< IKF header */
 
 int main(int argc, char** argv)
 {
