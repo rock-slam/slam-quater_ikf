@@ -8,16 +8,19 @@
 
 #include <vector>
 
-//#define DEBUG_PRINTS 1
+//#define ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS 1
 
 namespace filter
 {
     /**@brief Class for Adaptive measurement matrix for the attitude correction in 3D
     */
+    template <typename _Scalar, size_t _DoFState, size_t _MeasurementSize>
     class AdaptiveAttitudeCov
     {
 
     protected:
+
+        typedef Eigen::Matrix<_Scalar, _MeasurementSize, _MeasurementSize> MeasurementMatrix;
 
         unsigned int r1count; /** Variable used in the adaptive algorithm, to compute the Uk matrix for SVD*/
         unsigned int m1; /** Parameter for adaptive algorithm (to estimate Uk which is not directly observale) */
@@ -26,7 +29,7 @@ namespace filter
         unsigned int r2count; /** Parameter for adaptive algorithm */
 
         /** History of M1 measurement noise covariance matrix (for the adaptive algorithm) */
-        std::vector < Eigen::Matrix3d, Eigen::aligned_allocator < Eigen::Matrix3d > > RHist;
+        std::vector <  MeasurementMatrix, Eigen::aligned_allocator < MeasurementMatrix > > RHist;
 
     public:
 
@@ -37,11 +40,11 @@ namespace filter
             r1count = 0;
             r2count = M2;
             RHist.resize(M1);
-            for (std::vector< Eigen::Matrix3d, Eigen::aligned_allocator < Eigen::Matrix3d > >::iterator it = RHist.begin()
+            for (typename std::vector< MeasurementMatrix, Eigen::aligned_allocator < MeasurementMatrix > >::iterator it = RHist.begin()
                     ; it != RHist.end(); ++it)
                 (*it).setZero();
 
-            #ifdef DEBUG_PRINTS
+            #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
             std::cout<<"[INIT ADAPTIVE_ATTITUDE] M1: "<<m1<<"\n";
             std::cout<<"[INIT ADAPTIVE_ATTITUDE] M2: "<<m2<<"\n";
             std::cout<<"[INIT ADAPTIVE_ATTITUDE] GAMMA: "<<gamma<<"\n";
@@ -54,28 +57,27 @@ namespace filter
 
         ~AdaptiveAttitudeCov(){}
 
-        template <int _DoFState>
-        Eigen::Matrix3d matrix(const Eigen::Matrix <double, _DoFState, 1> xk,
-                            const Eigen::Matrix <double, _DoFState, _DoFState> &Pk,
-                            const Eigen::Vector3d &z,
-                            const Eigen::Matrix <double, 3, _DoFState> &H,
-                            const Eigen::Matrix3d &R)
+        Eigen::Matrix<_Scalar, _MeasurementSize, _MeasurementSize> matrix(const Eigen::Matrix <_Scalar, _DoFState, 1> xk,
+                            const Eigen::Matrix<_Scalar, _DoFState, _DoFState> &Pk,
+                            const Eigen::Matrix<_Scalar, _MeasurementSize, 1> &z,
+                            const Eigen::Matrix<_Scalar, _MeasurementSize, _DoFState> &H,
+                            const Eigen::Matrix<_Scalar, _MeasurementSize, _MeasurementSize>  &R)
         {
-            Eigen::Matrix3d R1a; /** Measurement noise covariance matrix for the adaptive algorithm */
-            Eigen::Matrix3d fooR; /**  Measurement noise matrix from accelerometers matrix Ra */
-            Eigen::Matrix3d Uk; /** Uk measurement noise covariance matrix for the adaptive algorithm */
-            Eigen::Matrix3d Qstar; /** External acceleration covariance matrix */
-            Eigen::Matrix3d u; /** Unitary matrix U for the SVD decomposition */
-            Eigen::Vector3d lambda; /** Lambda vector for the adaptive algorithm */
-            Eigen::Vector3d mu; /** mu vector for the adaptive algorithm */
-            Eigen::Vector3d s; /** Unitary matrix V for the SVD decomposition */
+            MeasurementMatrix R1a; /** Measurement noise covariance matrix for the adaptive algorithm */
+            MeasurementMatrix fooR; /**  Measurement noise matrix from accelerometers matrix Ra */
+            MeasurementMatrix Uk; /** Uk measurement noise covariance matrix for the adaptive algorithm */
+            MeasurementMatrix Qstar; /** External acceleration covariance matrix */
+            MeasurementMatrix u; /** Unitary matrix U for the SVD decomposition */
+            Eigen::Matrix<_Scalar, _MeasurementSize, 1> lambda; /** Lambda vector for the adaptive algorithm */
+            Eigen::Matrix<_Scalar, _MeasurementSize, 1> mu; /** mu vector for the adaptive algorithm */
+            Eigen::Matrix<_Scalar, _MeasurementSize, 1> s; /** Unitary matrix V for the SVD decomposition */
 
             /** Estimation of R **/
             R1a = (z - H*xk) * (z - H*xk).transpose();
 
             RHist[r1count] = R1a;
 
-            #ifdef DEBUG_PRINTS
+            #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
             std::cout<<"[ADAPTIVE_ATTITUDE] xk:\n"<<xk<<"\n";
             std::cout<<"[ADAPTIVE_ATTITUDE] Pk:\n"<<Pk<<"\n";
             std::cout<<"[ADAPTIVE_ATTITUDE] z:\n"<<z<<"\n";
@@ -98,7 +100,7 @@ namespace filter
                 Uk += RHist[j];
             }
 
-            Uk = Uk/static_cast<double>(m1);
+            Uk = Uk/static_cast<_Scalar>(m1);
 
             fooR = H*Pk*H.transpose() + R;
 
@@ -110,52 +112,54 @@ namespace filter
             s = svdOfUk.singularValues(); //!eigenvalues
             u = svdOfUk.matrixU();//!eigenvectors
 
-            lambda << s(0), s(1), s(2);
+            for (size_t i=0; i<_MeasurementSize; ++i)
+            {
+                lambda[i] = s(i);
+                mu(i) = u.col(i).transpose() * fooR * u.col(i);
+            }
 
-            mu(0) = u.col(0).transpose() * fooR * u.col(0);
-            mu(1) = u.col(1).transpose() * fooR * u.col(1);
-            mu(2) = u.col(2).transpose() * fooR * u.col(2);
-
-            #ifdef DEBUG_PRINTS
+            #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
             std::cout<<"[ADAPTIVE_ATTITUDE] (lambda - mu) is:\n"<<(lambda - mu)<<"\n";
             #endif
 
             if ((lambda - mu).maxCoeff() > gamma)
             {
 
-                #ifdef DEBUG_PRINTS
+                #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
                 std::cout<<"[ADAPTIVE_ATTITUDE] "<<(lambda - mu).maxCoeff() <<" Bigger than Gamma("<<gamma<<")\n";
                 #endif
 
                 r2count = 0;
-                Eigen::Vector3d auxvector; /** Auxiliary vector variable */
-                auxvector(0) = std::max(lambda(0)-mu(0),static_cast<double>(0.00));
-                auxvector(1) = std::max(lambda(1)-mu(1),static_cast<double>(0.00));
-                auxvector(2) = std::max(lambda(2)-mu(2),static_cast<double>(0.00));
+                Eigen::Matrix<_Scalar, _MeasurementSize, 1> auxvector; /** Auxiliary vector variable */
+                for(size_t i=0; i<_MeasurementSize; ++i)
+                {
+                    auxvector(i) = std::max(lambda(i)-mu(i),static_cast<double>(0.00));
+                }
 
                 Qstar = auxvector(0) * u.col(0) * u.col(0).transpose() + auxvector(1) * u.col(1) * u.col(1).transpose() + auxvector(2) * u.col(2) * u.col(2).transpose();
             }
             else
             {
-                #ifdef DEBUG_PRINTS
+                #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
                 std::cout<<"[ADAPTIVE_ATTITUDE] "<<(lambda - mu).maxCoeff() <<" Lower than Gamma("<<gamma<<") r2count: "<<r2count<<"\n";
                 #endif
 
                 r2count ++;
                 if (r2count < m2)
                 {
-                    Eigen::Vector3d auxvector; /** Auxiliary vector variable */
-                    auxvector(0) = std::max(lambda(0)-mu(0),static_cast<double>(0.00));
-                    auxvector(1) = std::max(lambda(1)-mu(1),static_cast<double>(0.00));
-                    auxvector(2) = std::max(lambda(2)-mu(2),static_cast<double>(0.00));
+                    Eigen::Matrix<_Scalar, _MeasurementSize, 1> auxvector; /** Auxiliary vector variable */
+                    for(size_t i=0; i<_MeasurementSize; ++i)
+                    {
+                        auxvector(i) = std::max(lambda(i)-mu(i),static_cast<double>(0.00));
+                    }
 
                     Qstar = auxvector(0) * u.col(0) * u.col(0).transpose() + auxvector(1) * u.col(1) * u.col(1).transpose() + auxvector(2) * u.col(2) * u.col(2).transpose();
                 }
                 else
-                    Qstar = Eigen::Matrix3d::Zero();
+                    Qstar = MeasurementMatrix::Zero();
             }
 
-            #ifdef DEBUG_PRINTS
+            #ifdef ADAPTIVE_ATTITUDE_COV_DEBUG_PRINTS
             std::cout<<"[ADAPTIVE_ATTITUDE] Qstar:\n"<<Qstar<<"\n";
             #endif
 
