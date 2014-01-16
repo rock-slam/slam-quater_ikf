@@ -121,7 +121,7 @@ namespace filter
 
         /**
         * @brief This function Initialize the vectors and matrix of the IKF
-        * 
+        *
         * This method receives the measurement noise matrix of the sensors
         * The theoretical gravity value and the Dip angle of the location.
         *
@@ -324,23 +324,38 @@ namespace filter
         }
 
         void update(const Eigen::Matrix <_Scalar,3,1>  &acc, bool acc_on,
-                const Eigen::Matrix< _Scalar,3, 1> &incl, bool incl_on)
+                const Eigen::Matrix< _Scalar,3, 1> &measurement, bool measurement_on)
         {
             Eigen::Matrix <_Scalar,3,1>  aux; aux.setZero();
-            update(acc, acc_on, incl, incl_on, aux, false);
+            if (_Inclinometers)
+            {
+                update(acc, acc_on, measurement, measurement_on, aux, false);
+            }
+            else
+            {
+                update(acc, acc_on, aux, false, measurement, measurement_on);
+            }
         }
 
 
-        void update(const Eigen::Matrix <_Scalar,3,1>  &acc,
-                const Eigen::Matrix< _Scalar,3, 1> &incl)
+        void update(const Eigen::Matrix <_Scalar,3,1>  &measurement1,
+                const Eigen::Matrix< _Scalar,3, 1> &measurement2)
         {
+            Eigen::Matrix <_Scalar,3,1>  aux; aux.setZero();
             if (_Accelerometers && _Inclinometers)
             {
-                Eigen::Matrix <_Scalar,3,1>  aux; aux.setZero();
-                update(acc, true, incl, true, aux, false);
+                update(measurement1, true, measurement2, true, aux, false);
+            }
+            else if (_Accelerometers)
+            {
+                update(measurement1, true, aux, false, measurement2, true);
+            }
+            else if (_Inclinometers)
+            {
+                update(aux, false, measurement1, true, measurement2, true);
             }
             else
-                throw std::runtime_error("IKF without inclinometers and accelerometers. You are updating both sensors");
+                throw std::runtime_error("IKF without accelerometers and inclinometers. Only update with magnetometers allowed");
         }
 
 
