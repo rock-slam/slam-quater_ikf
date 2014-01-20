@@ -6,7 +6,7 @@ includedir=${prefix}/include
 Name: @TARGET_NAME@
 Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
-Requires: @DEPS_PKGCONFIG@
-Libs: -L${libdir} -l@TARGET_NAME@
+Requires: base-types eigen3
+Libs:
 Cflags: -I${includedir}
 
