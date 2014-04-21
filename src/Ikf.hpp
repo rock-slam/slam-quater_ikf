@@ -778,13 +778,20 @@ namespace filter
         }
 
         /**
-        * @brief Gets gravity in IMU body frame
+        * @brief Gets gravity in the IMU body frame
         */
         Eigen::Matrix<_Scalar, 3, 1> getGravityinBody()
         {
             return q4.inverse() * gtilde;
         }
 
+        /**
+        * @brief Gets gravity in the local Geographic frame
+        */
+        inline Eigen::Matrix<_Scalar, 3, 1> getGravity() const
+        {
+            return gtilde;
+        }
 
         /**
         * @brief Gets the current orientation in Quaternion
