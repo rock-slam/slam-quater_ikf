@@ -899,7 +899,7 @@ namespace filter
                     s(i) = 0.00;
             }
 
-            spdA = svdOfA.matrixU() * s.matrix().asDiagonal() * svdOfA.matrixV();
+            spdA = svdOfA.matrixU() * s.matrix().asDiagonal() * svdOfA.matrixV().transpose();
 
             #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
             Eigen::EigenSolver<_MatrixType> eigSPD(spdA);
