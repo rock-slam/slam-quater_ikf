@@ -603,6 +603,9 @@ namespace filter
                 x.template block<3, 1> (6+(flagAcc*3),0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
             }
 
+            /** Guarantee SPD Covariance matrix **/
+            P = this->guaranteeSPD< Eigen::Matrix <_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> >(P);
+
             #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
             std::cout<<"bahat:\n"<<bahat<<"\n";
             std::cout<<"bghat:\n"<<bghat<<"\n";
@@ -861,7 +864,7 @@ namespace filter
         }
 
         /**
-        * @brief Conversion Quaternion to DCM (Direct Cosine Matrix) (Alternative to Eigen)
+        * @brief Method to guarantee Semi-Positive Definite (SPD) matrix
         */
         template <typename _MatrixType>
         static _MatrixType guaranteeSPD (const _MatrixType &A)
