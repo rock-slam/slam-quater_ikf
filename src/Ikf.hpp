@@ -446,7 +446,6 @@ namespace filter
                 P = (Eigen::Matrix<_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
                       -K1*H1)*P*(Eigen::Matrix<_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
                       -K1*H1).transpose() + K1*R1*K1.transpose();
-                P = 0.5 * (P + P.transpose());//Guarantee symmetry
 
                 #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
                 std::cout<<"x(k+1|k+1):\n"<<x<<"\n";
@@ -505,7 +504,6 @@ namespace filter
                 /** Update the state vector and the covariance matrix **/
                 x = x + K2*(z2 - (H2*x));
                 P = P - K2 * H2 * P - P * H2.transpose() * K2.transpose() + K2*(H2*P*H2.transpose() + Rm)*K2.transpose();
-                P = 0.5 * (P + P.transpose());
 
                 /** Update the quaternion with the Indirect approach **/
                 qe.w() = 1;
@@ -560,7 +558,6 @@ namespace filter
                 P = (Eigen::Matrix<_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
                       -K3*H3)*P*(Eigen::Matrix<_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE>::Identity()
                       -K3*H3).transpose() + K3*R3*K3.transpose();
-                P = 0.5 * (P + P.transpose());//Guarantee symmetry
 
                 #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
                 std::cout<<"x(k+1|k+1):\n"<<x<<"\n";
@@ -605,6 +602,7 @@ namespace filter
 
             /** Guarantee SPD Covariance matrix **/
             P = this->guaranteeSPD< Eigen::Matrix <_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> >(P);
+            P = 0.5 * (P + P.transpose());//Guarantee symmetry
 
             #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
             std::cout<<"bahat:\n"<<bahat<<"\n";
