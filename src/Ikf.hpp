@@ -56,13 +56,13 @@ namespace filter
 
     private:
         /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
-        static const int Re = 6378137; /** Equatorial radius in meters **/
-        static const int Rp = 6378137; /** Polar radius in meters **/
-        static const double ECC = 0.0818191908426; /** First eccentricity **/
-        static const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
-        static const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
-        static const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
-        static const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
+        const int Re = 6378137; /** Equatorial radius in meters **/
+        const int Rp = 6378137; /** Polar radius in meters **/
+        const double ECC = 0.0818191908426; /** First eccentricity **/
+        const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
+        const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
+        const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
+        const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
 
         /** Magnetic declination **/
         enum DECLINATION_CONSTS {
