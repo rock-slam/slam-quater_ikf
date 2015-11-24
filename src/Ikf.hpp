@@ -52,17 +52,17 @@ namespace filter
 
         /** Constants definitions **/
         static const unsigned int QUATERNION_SIZE = 4;
-        static const unsigned int IKFSTATEVECTORSIZE = 6 + (flagAcc*3) + (flagIncl*3);
+        static const unsigned int IKFSTATEVECTORSIZE = 9 + (flagAcc*3) + (flagIncl*3);
 
     private:
         /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
-        const int Re = 6378137; /** Equatorial radius in meters **/
-        const int Rp = 6378137; /** Polar radius in meters **/
-        const double ECC = 0.0818191908426; /** First eccentricity **/
-        const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
-        const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
-        const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
-        const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
+        static const int Re = 6378137; /** Equatorial radius in meters **/
+        static const int Rp = 6378137; /** Polar radius in meters **/
+        static const double ECC = 0.0818191908426; /** First eccentricity **/
+        static const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
+        static const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
+        static const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
+        static const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
 
         /** Magnetic declination **/
         enum DECLINATION_CONSTS {
@@ -84,15 +84,16 @@ namespace filter
         Eigen::Matrix <_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> A; /** System matrix */
         Eigen::Matrix <_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Q; /** Process noise covariance matrix */
         Eigen::Matrix <_Scalar,3,3> Ra; /** Measurement noise covariance matrix for acc */
-        Eigen::Matrix <_Scalar,3,3> Rg; /** Measurement noise covariance matrix for gyros */
+        Eigen::Matrix <_Scalar,3,3> Qg; /** Measurement noise covariance matrix for gyros */
         Eigen::Matrix <_Scalar,3,3> Rm; /** Measurement noise covariance matrix for mag */
         Eigen::Matrix <_Scalar,3,3> Ri; /** Measurement noise covariance matrix for mag */
         Eigen::Matrix <_Scalar,3,IKFSTATEVECTORSIZE> H1; /** Measurement 1 Observation matrix */
         Eigen::Matrix <_Scalar,3,IKFSTATEVECTORSIZE> H2; /** Measurement 2 Observation matrix */
         Eigen::Matrix <_Scalar,3,IKFSTATEVECTORSIZE> H3; /** Measurement 3 Observation matrix */
-        Eigen::Matrix <_Scalar,3,1> bahat; /** Estimated bias for accelerometers */
-        Eigen::Matrix <_Scalar,3,1> bghat; /** Estimated bias for gyroscope */
-        Eigen::Matrix <_Scalar,3,1> bihat; /** Estimated bias for inclinometers */
+        Eigen::Matrix <_Scalar,3,1> bghat; /** Estimated bias instability for gyroscope */
+        Eigen::Matrix <_Scalar,3,1> kghat; /** Estimated rate random walk for gyroscope */
+        Eigen::Matrix <_Scalar,3,1> kahat; /** Estimated acceleration random walk for accelerometers */
+        Eigen::Matrix <_Scalar,3,1> kihat; /** Estimated acceleration random walk for inclinometers */
 
         /** Object of Class for Adaptive Measurement of Attitude Covariance Matrix (Accelerometers) **/
         boost::shared_ptr<AdaptiveAttitudeCovAcc> adapAttAcc;
@@ -129,7 +130,7 @@ namespace filter
         *
         * @param[in] P_0 Initial state covariance matrix
         * @param[in] Ra measurement noise matrix of Accelerometers.
-        * @param[in] Rg measurement noise matrix of Gyroscopes.
+        * @param[in] Qg covariance noise matrix of Gyroscopes.
         * @param[in] Rm measurement noise matrix of Magnetometers.
         * @param[in] Qbg covariance noise matrix of the gyroscopes bias
         * @param[in] Qba covariance noise matrix of the accelerometers bias 
@@ -141,12 +142,14 @@ namespace filter
         */
         void Init(const Eigen::Matrix <_Scalar,Ikf::IKFSTATEVECTORSIZE,Ikf::IKFSTATEVECTORSIZE> &P_0,
                 const Eigen::Matrix <_Scalar,3,3> &Ra,
-                const Eigen::Matrix <_Scalar, 3, 3> &Rg,
+                const Eigen::Matrix <_Scalar, 3, 3> Qg,
                 const Eigen::Matrix <_Scalar,3,3> &Rm,
                 const Eigen::Matrix <_Scalar,3,3> &Ri,
                 const Eigen::Matrix <_Scalar, 3, 3> &Qbg,
-                const Eigen::Matrix <_Scalar,3,3> &Qba,
-                const Eigen::Matrix <_Scalar,3,3> &Qbi,
+                const Eigen::Matrix <_Scalar,3,3> &Qkg,
+                const Eigen::Matrix <_Scalar,3,3> &Qka,
+                const Eigen::Matrix <_Scalar,3,3> &Qki,
+                const Eigen::Matrix <_Scalar,3,1> &taub,
                 double g, double alpha,
                 unsigned int am1, unsigned int am2, double agamma,
                 unsigned int im1, unsigned int im2, double igamma)
@@ -164,12 +167,13 @@ namespace filter
             x = Eigen::Matrix <_Scalar,Ikf::IKFSTATEVECTORSIZE,1>::Zero();
 
             Q = Eigen::Matrix <_Scalar,Ikf::IKFSTATEVECTORSIZE,Ikf::IKFSTATEVECTORSIZE>::Zero();
-            Q.template block<3, 3> (0,0) = 0.25 * (Rg);
+            Q.template block<3, 3> (0,0) = 0.25 * (Qg);
             Q.template block<3, 3> (3,3) = (Qbg);
+            Q.template block<3, 3> (6,6) = (Qkg);
             if (_Accelerometers)
-                Q.template block<3, 3> (6,6) = (Qba);
+                Q.template block<3, 3> (9,9) = (Qka);
             if (_Inclinometers)
-                Q.template block<3, 3> (6+(flagAcc*3),6+(flagAcc*3)) = (Qbi);
+                Q.template block<3, 3> (9+(flagAcc*3),6+(flagAcc*3)) = (Qki);
 
             /** Initial error covariance **/
             P = (P_0);
@@ -181,26 +185,29 @@ namespace filter
 
             if (_Accelerometers)
             {
-                H1(0,6) = 1; H1(1,7) = 1; H1(2,8) = 1;
+                H1(0,9) = 1; H1(1,10) = 1; H1(2,11) = 1;
             }
             if (_Inclinometers)
             {
-                H3(0,6) = 1; H3(1,7) = 1; H3(2,8) = 1;
+                H3(0,9) = 1; H3(1,10) = 1; H3(2,11) = 1;
             }
             if (_Accelerometers && _Inclinometers)
             {
                 H3 = Eigen::Matrix<_Scalar, 3,Ikf::IKFSTATEVECTORSIZE>::Zero();
-                H3(0,9) = 1; H3(1,10) = 1; H3(2,11) = 1;
+                H3(0,12) = 1; H3(1,13) = 1; H3(2,14) = 1;
             }
 
             /** System matrix A **/
             A = Eigen::Matrix <_Scalar,Ikf::IKFSTATEVECTORSIZE,Ikf::IKFSTATEVECTORSIZE>::Zero();
             A(0,3) = -0.5;A(1,4) = -0.5;A(2,5) = -0.5;
+            A(0,6) = -0.5;A(1,7) = -0.5;A(2,8) = -0.5;
+            A(3,3) = -(1.0/taub[0]);A(4,4) = -(1.0/taub[1]);A(5,5) = -(1.0/taub[2]);
 
             /** Initial bias **/
             bghat = Eigen::Matrix <_Scalar,3,1>::Zero();
-            bahat = Eigen::Matrix <_Scalar,3,1>::Zero();
-            bihat = Eigen::Matrix <_Scalar,3,1>::Zero();
+            kghat = Eigen::Matrix <_Scalar,3,1>::Zero();
+            kahat = Eigen::Matrix <_Scalar,3,1>::Zero();
+            kihat = Eigen::Matrix <_Scalar,3,1>::Zero();
 
             /** Default omega matrix **/
             oldomega4 << 0 , 0 , 0 , 0,
@@ -208,16 +215,15 @@ namespace filter
               0 , 0 , 0 , 0,
               0 , 0 , 0 , 0;
 
-
             /** Initial quaternion in Init**/
             q4.w() = 1.00;
             q4.x() = 0.00;
             q4.y() = 0.00;
             q4.z() = 0.00;
 
-            /** Fill matrix Rg, Ra, Rm and Ri **/
+            /** Fill matrix Qg, Ra, Rm and Ri **/
             this->Ikf::Ra = Ra;
-            this->Ikf::Rg = Rg;
+            this->Ikf::Qg = Qg;
             this->Ikf::Rm = Rm;
             this->Ikf::Ri = Ri;
 
@@ -235,7 +241,7 @@ namespace filter
             std::cout<< "mtilde:\n"<<mtilde<<"\n";
             std::cout<< "gtilde:\n"<<gtilde<<"\n";
             std::cout<< "Ra:\n"<<Ra<<"\n";
-            std::cout<< "Rg:\n"<<Rg<<"\n";
+            std::cout<< "Qg:\n"<<Qg<<"\n";
             std::cout<< "Rm:\n"<<Rm<<"\n";
             std::cout<< "Ri:\n"<<Ri<<"\n";
             #endif
@@ -269,7 +275,7 @@ namespace filter
             Eigen::Matrix <_Scalar,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Qd; /**< Discrete Q matrix */
 
             /** Compute the vector2product matrix with the angular velocity **/
-            angvelo = (u) - bghat; /** Eliminate the Bias **/
+            angvelo = (u) - bghat - kghat; /** Eliminate the Bias instability and rate random walk**/
 
             vec2product << 0, -angvelo(2), angvelo(1),
                         angvelo(2), 0, -angvelo(0),
@@ -422,7 +428,7 @@ namespace filter
                 H1.template block<3, 3> (0,0) = 2*vec2product;
 
                 /** Measurement **/
-                z1 = (acc) - bahat - gtilde_body;
+                z1 = (acc) - kahat - gtilde_body;
 
                 #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
                 std::cout<<"acc:\n"<<acc<<"\n";
@@ -534,7 +540,7 @@ namespace filter
                 H3.template block<3, 3> (0,0) = 2*vec2product;
 
                 /** Measurement **/
-                z3 = (incl) - bihat - gtilde_body;
+                z3 = (incl) - kihat - gtilde_body;
 
                 #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
                 std::cout<<"incl:\n"<<incl<<"\n";
@@ -587,16 +593,18 @@ namespace filter
             /**---------------------------- **/
             bghat = bghat + x.template block<3, 1> (3,0);
             x.template block<3, 1> (3,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
+            kghat = kghat + x.template block<3, 1> (6,0);
+            x.template block<3, 1> (6,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
 
             if (_Accelerometers)
             {
-                bahat = bahat + x.template block<3, 1> (6,0);
+                kahat = kahat + x.template block<3, 1> (9,0);
                 x.template block<3, 1> (6,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
             }
 
             if (_Inclinometers)
             {
-                bihat = bihat + x.template block<3, 1> (6+(flagAcc*3),0);
+                kihat = kihat + x.template block<3, 1> (9+(flagAcc*3),0);
                 x.template block<3, 1> (6+(flagAcc*3),0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
             }
 
@@ -605,9 +613,10 @@ namespace filter
             P = 0.5 * (P + P.transpose());//Guarantee symmetry
 
             #ifdef INDIRECT_KALMAN_FILTER_DEBUG_PRINTS
-            std::cout<<"bahat:\n"<<bahat<<"\n";
             std::cout<<"bghat:\n"<<bghat<<"\n";
-            std::cout<<"bihat:\n"<<bihat<<"\n";
+            std::cout<<"kghat:\n"<<kghat<<"\n";
+            std::cout<<"kahat:\n"<<kahat<<"\n";
+            std::cout<<"kihat:\n"<<kihat<<"\n";
             #endif
 
             return;
@@ -698,13 +707,15 @@ namespace filter
         * @return void.
         *
         */
-        void setInitBias (const Eigen::Matrix<_Scalar, 3, 1> &gbias,
-            const Eigen::Matrix<_Scalar, 3, 1> &abias,
-            const Eigen::Matrix<_Scalar, 3, 1> &ibias)
+        void setInitBias (const Eigen::Matrix<_Scalar, 3, 1> &gbiasinstability,
+            const Eigen::Matrix<_Scalar, 3, 1> &gratewalk,
+            const Eigen::Matrix<_Scalar, 3, 1> &aratewalk,
+            const Eigen::Matrix<_Scalar, 3, 1> &iratewalk)
         {
-            this->bghat = gbias;
-            this->bahat = abias;
-            this->bihat = ibias;
+            this->bghat = gbiasinstability;
+            this->kghat = gratewalk;
+            this->kahat = aratewalk;
+            this->kihat = iratewalk;
 
             return;
         }
@@ -742,27 +753,36 @@ namespace filter
         }
 
         /**
-        * @brief Gets the current gyroscopes bias
+        * @brief Gets the current gyroscopes bias instability
         */
-        Eigen::Matrix<double, 3, 1> getGyroBias()
+        Eigen::Matrix<double, 3, 1> getGyroBiasInstability()
         {
             return this->bghat;
         }
 
         /**
+        * @brief Gets the current gyroscopes random walk
+        */
+        Eigen::Matrix<double, 3, 1> getGyroRateRandomWalk()
+        {
+            return this->kghat;
+        }
+
+
+        /**
         * @brief Gets the current accelerometers bias
         */
-        Eigen::Matrix<double, 3, 1> getAccBias()
+        Eigen::Matrix<double, 3, 1> getAccAccelerationRandomWalk()
         {
-            return this->bahat;
+            return this->kahat;
         }
 
         /**
         * @brief Gets the current inclinometers bias
         */
-        Eigen::Matrix<double, 3, 1> getInclBias()
+        Eigen::Matrix<double, 3, 1> getInclAccelerationRandomWalk()
         {
-            return this->bihat;
+            return this->kihat;
         }
 
         /**
