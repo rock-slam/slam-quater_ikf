@@ -287,7 +287,7 @@ namespace filter
 
             /** Propagate the vector through the system **/
             x = dA * x;
-            Qd = Q*dt + 0.5*dt*A*Q + 0.5*dt*Q*A.transpose();
+            Qd = Q*dt + 0.5*dt*dt*A*Q + 0.5*dt*dt*Q*A.transpose();
             Qd = 0.5*(Qd + Qd.transpose());//Guarantee symmetry
             P = dA*P*dA.transpose() + Qd;
 
