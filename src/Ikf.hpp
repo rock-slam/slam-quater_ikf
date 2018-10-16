@@ -47,22 +47,22 @@ namespace filter
 
     public:
         /** Convert bool to int is standard in C++ **/
-        static const int flagAcc = static_cast<int>(_Accelerometers);
-        static const int flagIncl = static_cast<int>(_Inclinometers);
+        static constexpr int flagAcc = static_cast<int>(_Accelerometers);
+        static constexpr int flagIncl = static_cast<int>(_Inclinometers);
 
         /** Constants definitions **/
-        static const unsigned int QUATERNION_SIZE = 4;
-        static const unsigned int IKFSTATEVECTORSIZE = 6 + (flagAcc*3) + (flagIncl*3);
+        static constexpr unsigned int QUATERNION_SIZE = 4;
+        static constexpr unsigned int IKFSTATEVECTORSIZE = 6 + (flagAcc*3) + (flagIncl*3);
 
     private:
         /** WGS-84 ellipsoid constants (Nominal Gravity Model and Earth angular velocity) **/
-        const int Re = 6378137; /** Equatorial radius in meters **/
-        const int Rp = 6378137; /** Polar radius in meters **/
-        const double ECC = 0.0818191908426; /** First eccentricity **/
-        const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
-        const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
-        const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
-        const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
+        static constexpr int Re = 6378137; /** Equatorial radius in meters **/
+        static constexpr int Rp = 6378137; /** Polar radius in meters **/
+        static constexpr double ECC = 0.0818191908426; /** First eccentricity **/
+        static constexpr double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
+        static constexpr double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
+        static constexpr double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
+        static constexpr double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
 
         /** Magnetic declination **/
         enum DECLINATION_CONSTS {
