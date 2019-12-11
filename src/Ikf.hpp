@@ -93,6 +93,9 @@ namespace filter
         Eigen::Matrix <_Scalar,3,1> bahat; /** Estimated bias for accelerometers */
         Eigen::Matrix <_Scalar,3,1> bghat; /** Estimated bias for gyroscope */
         Eigen::Matrix <_Scalar,3,1> bihat; /** Estimated bias for inclinometers */
+        bool estimate_acc_bias; /** Estimate bias for acceleromenters */
+        bool estimate_gyro_bias; /** Estimate bias for gyroscope */
+        bool estimate_incl_bias; /** Estimate bias for inclinometers */
 
         /** Object of Class for Adaptive Measurement of Attitude Covariance Matrix (Accelerometers) **/
         boost::shared_ptr<AdaptiveAttitudeCovAcc> adapAttAcc;
@@ -201,6 +204,11 @@ namespace filter
             bghat = Eigen::Matrix <_Scalar,3,1>::Zero();
             bahat = Eigen::Matrix <_Scalar,3,1>::Zero();
             bihat = Eigen::Matrix <_Scalar,3,1>::Zero();
+
+            /** Estimate bias */
+            estimate_acc_bias = true;
+            estimate_gyro_bias = true;
+            estimate_incl_bias = true;
 
             /** Default omega matrix **/
             oldomega4 << 0 , 0 , 0 , 0,
@@ -585,16 +593,19 @@ namespace filter
             /**---------------------------- **/
             /** Reset the rest of the state **/
             /**---------------------------- **/
-            bghat = bghat + x.template block<3, 1> (3,0);
-            x.template block<3, 1> (3,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
+            if (estimate_gyro_bias)
+            {
+                bghat = bghat + x.template block<3, 1> (3,0);
+                x.template block<3, 1> (3,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
+            }
 
-            if (_Accelerometers)
+            if (_Accelerometers && estimate_acc_bias)
             {
                 bahat = bahat + x.template block<3, 1> (6,0);
                 x.template block<3, 1> (6,0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
             }
 
-            if (_Inclinometers)
+            if (_Inclinometers && estimate_incl_bias)
             {
                 bihat = bihat + x.template block<3, 1> (6+(flagAcc*3),0);
                 x.template block<3, 1> (6+(flagAcc*3),0) = Eigen::Matrix <_Scalar, 3, 1>::Zero();
@@ -705,6 +716,29 @@ namespace filter
             this->bghat = gbias;
             this->bahat = abias;
             this->bihat = ibias;
+
+            return;
+        }
+
+        /**
+        * @brief Activate bias estimation
+        *
+        * Estimation of sensor bias.
+        *
+        * @param[in] estimate_gyro_bias gyroscopes bias
+        * @param[in] estimate_acc_bias accelerometers bias
+        * @param[in] estimate_incl_bias inclinometers bias
+        *
+        * @return void.
+        *
+        */
+        void setBiasEstimation (bool estimate_gyro_bias,
+            bool estimate_acc_bias,
+            bool estimate_incl_bias)
+        {
+            this->estimate_gyro_bias = estimate_gyro_bias;
+            this->estimate_acc_bias = estimate_acc_bias;
+            this->estimate_incl_bias = estimate_incl_bias;
 
             return;
         }
